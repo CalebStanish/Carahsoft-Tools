@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Lookup Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h2 {
+            text-align: center;
+            color: #444;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            resize: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>DataDog Sku Search</h2>
+        
+        <label for="fileInput">Upload Excel File:</label>
+        <input type="file" id="fileInput" accept=".xlsx, .xls">
+
+        <label for="descriptions">Enter up to 15 Descriptions:</label>
+        <textarea id="descriptions" rows="5" placeholder="Enter descriptions, one per line..."></textarea>
+
+        <button onclick="processFile()">Search</button>
+
+        <h3>Results:</h3>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Additional Description</th>
+                    <th>SIN</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let excelData = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                
+                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+
+        function processFile() {
+            const descriptions = document.getElementById('descriptions').value
+                .split('\n')
+                .map(d => d.trim())
+                .filter(Boolean);
+            
+            if (!excelData.length || descriptions.length === 0) {
+                alert("Please upload an Excel file and enter descriptions.");
+                return;
+            }
+
+            const resultsTable = document.querySelector('#resultsTable tbody');
+            resultsTable.innerHTML = '';
+
+            descriptions.forEach(description => {
+                for (let i = 1; i < excelData.length; i++) {
+                    const row = excelData[i];
+                    if (row[14] && row[14].toString().trim() === description) { // Column O (Index 14)
+                        const sku = row[6] || "";  // Column G (Index 6)
+                        const additionalDesc = row[7] || "";  // Column H (Index 7)
+                        const sin = row[8] || "";  // Column I (Index 8)
+                        
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
+                        resultsTable.appendChild(tr);
+                        break; // Stops searching after the first match to maintain order
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
