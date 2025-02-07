@@ -34,14 +34,6 @@
             margin-top: 10px;
         }
 
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #fff;
-        }
-
         textarea {
             width: 100%;
             padding: 10px;
@@ -101,10 +93,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>DataDog Sku Search</h2>
-        
-        <label for="fileInput">Upload Excel File:</label>
-        <input type="file" id="fileInput" accept=".xlsx, .xls">
+        <h2>DataDog SKU Search</h2>
 
         <label for="descriptions">Enter up to 15 Descriptions:</label>
         <textarea id="descriptions" rows="5" placeholder="Enter descriptions, one per line..."></textarea>
@@ -125,25 +114,44 @@
     </div>
 
     <script>
-        let excelData = [];
+        const FILE_PATH = "DDdate.xlsx"; // Make sure this file is in the same folder as this HTML file
+        let excelDataMap = new Map();
 
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        async function fetchExcel() {
+            try {
+                const response = await fetch(FILE_PATH);
+                if (!response.ok) throw new Error("Failed to fetch Excel file.");
 
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                
-                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            };
-            
-            reader.readAsArrayBuffer(file);
-        });
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                // Convert Excel data to a Map for quick lookups
+                excelDataMap.clear();
+                for (let i = 1; i < jsonData.length; i++) {
+                    let row = jsonData[i];
+                    if (row[14]) { // Column O (Index 14) for descriptions
+                        let description = row[14].toString().trim();
+                        excelDataMap.set(description, {
+                            sku: row[6] || "N/A",  // Column G (Index 6)
+                            additionalDesc: row[7] || "N/A",  // Column H (Index 7)
+                            sin: row[8] || "N/A"  // Column I (Index 8)
+                        });
+                    }
+                }
+
+                console.log("Excel data successfully loaded.");
+            } catch (error) {
+                console.error("Error fetching Excel file:", error);
+                alert("Failed to load Excel data. Make sure 'DDdate.xlsx' is in the same folder.");
+            }
+        }
+
+        // Fetch the Excel file when the page loads
+        fetchExcel();
 
         function processFile() {
             const descriptions = document.getElementById('descriptions').value
@@ -151,31 +159,52 @@
                 .map(d => d.trim())
                 .filter(Boolean);
             
-            if (!excelData.length || descriptions.length === 0) {
-                alert("Please upload an Excel file and enter descriptions.");
+            if (excelDataMap.size === 0) {
+                alert("Excel data has not loaded yet. Please wait.");
+                return;
+            }
+
+            if (descriptions.length === 0) {
+                alert("Please enter at least one description.");
                 return;
             }
 
             const resultsTable = document.querySelector('#resultsTable tbody');
             resultsTable.innerHTML = '';
 
+            let foundAny = false;
+
             descriptions.forEach(description => {
-                for (let i = 1; i < excelData.length; i++) {
-                    const row = excelData[i];
-                    if (row[14] && row[14].toString().trim() === description) { // Column O (Index 14)
-                        const sku = row[6] || "";  // Column G (Index 6)
-                        const additionalDesc = row[7] || "";  // Column H (Index 7)
-                        const sin = row[8] || "";  // Column I (Index 8)
-                        
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
-                        resultsTable.appendChild(tr);
-                        break; // Stops searching after the first match to maintain order
-                    }
+                let exactMatch = excelDataMap.get(description);
+                if (exactMatch) {
+                    addRowToTable(exactMatch.sku, exactMatch.additionalDesc, exactMatch.sin);
+                    foundAny = true;
+                } else {
+                    // Check for partial matches
+                    let possibleMatches = Array.from(excelDataMap.keys()).filter(key => key.includes(description));
+                    possibleMatches.forEach(match => {
+                        let matchData = excelDataMap.get(match);
+                        addRowToTable(matchData.sku, matchData.additionalDesc, matchData.sin, true);
+                        foundAny = true;
+                    });
                 }
             });
+
+            if (!foundAny) {
+                alert("No matches found. Try refining your descriptions.");
+            }
+        }
+
+        function addRowToTable(sku, additionalDesc, sin, isPartial = false) {
+            const resultsTable = document.querySelector('#resultsTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${sku}</td>
+                <td>${isPartial ? `<span style="color: orange;">${additionalDesc} (Partial Match)</span>` : additionalDesc}</td>
+                <td>${sin}</td>
+            `;
+            resultsTable.appendChild(tr);
         }
     </script>
 </body>
 </html>
-
