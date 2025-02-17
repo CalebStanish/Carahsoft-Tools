@@ -184,6 +184,27 @@
 
         fetchExcel();
 
+        function processFile() {
+            const descriptions = document.getElementById('descriptions').value.split('\n').map(d => d.trim().toLowerCase()).filter(Boolean);
+            if (excelDataMap.size === 0) return alert("Excel data has not loaded yet.");
+            if (descriptions.length === 0) return alert("Please enter at least one description.");
+
+            const resultsTable = document.querySelector('#resultsTable tbody');
+            resultsTable.innerHTML = '';
+
+            descriptions.forEach(description => {
+                let match = excelDataMap.get(description) || { sku: "N/A", additionalDesc: "N/A", sin: "N/A" };
+                addRowToTable(match.sku, match.additionalDesc, match.sin);
+            });
+        }
+
+        function addRowToTable(sku, additionalDesc, sin) {
+            const resultsTable = document.querySelector('#resultsTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
+            resultsTable.appendChild(tr);
+        }
+
         function copyColumn(columnIndex) {
             const rows = document.querySelectorAll('#resultsTable tbody tr');
             let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
@@ -198,4 +219,3 @@
     </script>
 </body>
 </html>
-
