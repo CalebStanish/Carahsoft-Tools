@@ -193,7 +193,10 @@
         function copyColumn(columnIndex) {
             const rows = document.querySelectorAll('#resultsTable tbody tr');
             let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
-            navigator.clipboard.writeText(columnText).then(() => alert("Column copied successfully!"));
+            navigator.clipboard.writeText(columnText).then(() => {
+                let alertBox = alert("Column copied successfully!");
+                setTimeout(() => alertBox.close(), 2000);
+            });
         }
     </script>
 </body>
