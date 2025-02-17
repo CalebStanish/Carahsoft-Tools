@@ -34,13 +34,13 @@
             margin-top: 10px;
         }
 
-        textarea {
+        textarea, select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
-            resize: none;
+            margin-bottom: 10px;
         }
 
         button {
@@ -126,6 +126,13 @@
     <div class="container">
         <h2>DataDog SKU Search</h2>
 
+        <label for="skuType">Select SKU Type:</label>
+        <select id="skuType">
+            <option value="annual" selected>Annual</option>
+            <option value="month2month">Month-to-Month</option>
+            <option value="ondemand">On-Demand</option>
+        </select>
+
         <label for="descriptions">Enter up to 15 Descriptions:</label>
         <textarea id="descriptions" rows="5" placeholder="Enter descriptions, one per line..."></textarea>
 
@@ -152,7 +159,7 @@
 
     <script>
         const FILE_PATH = "DDdata.xlsx";
-        let excelDataMap = new Map();
+        let excelData = [];
 
         async function fetchExcel() {
             try {
@@ -161,22 +168,9 @@
 
                 const arrayBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                for (let i = 1; i < jsonData.length; i++) {
-                    let row = jsonData[i];
-                    if (row[14]) {
-                        let description = row[14].toString().trim().toLowerCase();
-                        excelDataMap.set(description, {
-                            sku: row[6] || "N/A",
-                            additionalDesc: row[7] || "N/A",
-                            sin: row[8] || "N/A"
-                        });
-                    }
-                }
+                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
             } catch (error) {
                 alert("Failed to load Excel data.");
             }
@@ -186,15 +180,22 @@
 
         function processFile() {
             const descriptions = document.getElementById('descriptions').value.split('\n').map(d => d.trim().toLowerCase()).filter(Boolean);
-            if (excelDataMap.size === 0) return alert("Excel data has not loaded yet.");
+            const skuType = document.getElementById('skuType').value;
+            if (excelData.length === 0) return alert("Excel data has not loaded yet.");
             if (descriptions.length === 0) return alert("Please enter at least one description.");
 
             const resultsTable = document.querySelector('#resultsTable tbody');
             resultsTable.innerHTML = '';
 
             descriptions.forEach(description => {
-                let match = excelDataMap.get(description) || { sku: "N/A", additionalDesc: "N/A", sin: "N/A" };
-                addRowToTable(match.sku, match.additionalDesc, match.sin);
+                let rowIndex = excelData.findIndex(row => row[14] && row[14].toString().trim().toLowerCase() === description);
+                if (rowIndex === -1) return;
+                
+                if (skuType === "month2month" && rowIndex > 0) rowIndex -= 1;
+                if (skuType === "ondemand" && rowIndex < excelData.length - 1) rowIndex += 1;
+                
+                let row = excelData[rowIndex] || ["N/A", "N/A", "N/A"];
+                addRowToTable(row[6] || "N/A", row[7] || "N/A", row[8] || "N/A");
             });
         }
 
@@ -203,18 +204,6 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
             resultsTable.appendChild(tr);
-        }
-
-        function copyColumn(columnIndex) {
-            const rows = document.querySelectorAll('#resultsTable tbody tr');
-            let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
-            navigator.clipboard.writeText(columnText).then(() => {
-                const notification = document.getElementById('notification');
-                notification.style.display = 'block';
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 2000);
-            });
         }
     </script>
 </body>
