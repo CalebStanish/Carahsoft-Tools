@@ -114,7 +114,7 @@
     </div>
 
     <script>
-        const FILE_PATH = "DDdata.xlsx"; // Ensure this file is in the same directory as index.html
+        const FILE_PATH = "DDdata.xlsx";
         let excelDataMap = new Map();
 
         async function fetchExcel() {
@@ -129,16 +129,16 @@
                 const sheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-                // Convert Excel data to a Map for quick lookups
-                excelDataMap.clear();
+                if (!jsonData.length) throw new Error("Excel file is empty or not formatted correctly.");
+
                 for (let i = 1; i < jsonData.length; i++) {
                     let row = jsonData[i];
-                    if (row[14]) { // Column O (Index 14) for descriptions
-                        let description = row[14].toString().trim();
+                    if (row[14]) {
+                        let description = row[14].toString().trim().toLowerCase();
                         excelDataMap.set(description, {
-                            sku: row[6] || "N/A",  // Column G (Index 6)
-                            additionalDesc: row[7] || "N/A",  // Column H (Index 7)
-                            sin: row[8] || "N/A"  // Column I (Index 8)
+                            sku: row[6] || "N/A",
+                            additionalDesc: row[7] || "N/A",
+                            sin: row[8] || "N/A"
                         });
                     }
                 }
@@ -146,17 +146,16 @@
                 console.log("Excel data successfully loaded.");
             } catch (error) {
                 console.error("Error fetching Excel file:", error);
-                alert("Failed to load Excel data. Make sure 'DDdate.xlsx' is in the same folder.");
+                alert("Failed to load Excel data. Make sure 'DDdata.xlsx' is in the same folder.");
             }
         }
 
-        // Fetch the Excel file when the page loads
         fetchExcel();
 
         function processFile() {
             const descriptions = document.getElementById('descriptions').value
                 .split('\n')
-                .map(d => d.trim())
+                .map(d => d.trim().toLowerCase())
                 .filter(Boolean);
             
             if (excelDataMap.size === 0) {
@@ -180,13 +179,16 @@
                     addRowToTable(exactMatch.sku, exactMatch.additionalDesc, exactMatch.sin);
                     foundAny = true;
                 } else {
-                    // Check for partial matches
                     let possibleMatches = Array.from(excelDataMap.keys()).filter(key => key.includes(description));
-                    possibleMatches.forEach(match => {
-                        let matchData = excelDataMap.get(match);
-                        addRowToTable(matchData.sku, matchData.additionalDesc, matchData.sin, true);
+                    if (possibleMatches.length > 0) {
+                        possibleMatches.forEach(match => {
+                            let matchData = excelDataMap.get(match);
+                            addRowToTable(matchData.sku, matchData.additionalDesc, matchData.sin, true);
+                        });
                         foundAny = true;
-                    });
+                    } else {
+                        addRowToTable("N/A", "N/A", "N/A");
+                    }
                 }
             });
 
