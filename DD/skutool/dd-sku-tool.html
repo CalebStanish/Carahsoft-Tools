@@ -84,6 +84,20 @@
             background-color: #f2f2f2;
         }
 
+        .copy-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+
+        .copy-btn:hover {
+            background-color: #218838;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 90%;
@@ -129,8 +143,6 @@
                 const sheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-                if (!jsonData.length) throw new Error("Excel file is empty or not formatted correctly.");
-
                 for (let i = 1; i < jsonData.length; i++) {
                     let row = jsonData[i];
                     if (row[14]) {
@@ -142,70 +154,44 @@
                         });
                     }
                 }
-
-                console.log("Excel data successfully loaded.");
             } catch (error) {
-                console.error("Error fetching Excel file:", error);
-                alert("Failed to load Excel data. Make sure 'DDdata.xlsx' is in the same folder.");
+                alert("Failed to load Excel data.");
             }
         }
 
         fetchExcel();
 
         function processFile() {
-            const descriptions = document.getElementById('descriptions').value
-                .split('\n')
-                .map(d => d.trim().toLowerCase())
-                .filter(Boolean);
-            
-            if (excelDataMap.size === 0) {
-                alert("Excel data has not loaded yet. Please wait.");
-                return;
-            }
-
-            if (descriptions.length === 0) {
-                alert("Please enter at least one description.");
-                return;
-            }
+            const descriptions = document.getElementById('descriptions').value.split('\n').map(d => d.trim().toLowerCase()).filter(Boolean);
+            if (excelDataMap.size === 0) return alert("Excel data has not loaded yet.");
+            if (descriptions.length === 0) return alert("Please enter at least one description.");
 
             const resultsTable = document.querySelector('#resultsTable tbody');
             resultsTable.innerHTML = '';
 
-            let foundAny = false;
-
             descriptions.forEach(description => {
-                let exactMatch = excelDataMap.get(description);
-                if (exactMatch) {
-                    addRowToTable(exactMatch.sku, exactMatch.additionalDesc, exactMatch.sin);
-                    foundAny = true;
-                } else {
-                    let possibleMatches = Array.from(excelDataMap.keys()).filter(key => key.includes(description));
-                    if (possibleMatches.length > 0) {
-                        possibleMatches.forEach(match => {
-                            let matchData = excelDataMap.get(match);
-                            addRowToTable(matchData.sku, matchData.additionalDesc, matchData.sin, true);
-                        });
-                        foundAny = true;
-                    } else {
-                        addRowToTable("N/A", "N/A", "N/A");
-                    }
-                }
+                let match = excelDataMap.get(description) || { sku: "N/A", additionalDesc: "N/A", sin: "N/A" };
+                addRowToTable(match.sku, match.additionalDesc, match.sin);
             });
-
-            if (!foundAny) {
-                alert("No matches found. Try refining your descriptions.");
-            }
         }
 
-        function addRowToTable(sku, additionalDesc, sin, isPartial = false) {
+        function addRowToTable(sku, additionalDesc, sin) {
             const resultsTable = document.querySelector('#resultsTable tbody');
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${sku}</td>
-                <td>${isPartial ? `<span style="color: orange;">${additionalDesc} (Partial Match)</span>` : additionalDesc}</td>
-                <td>${sin}</td>
+                <td>${sku} <button class="copy-btn" onclick="copyToClipboard('${sku}')">Copy</button></td>
+                <td>${additionalDesc} <button class="copy-btn" onclick="copyToClipboard('${additionalDesc}')">Copy</button></td>
+                <td>${sin} <button class="copy-btn" onclick="copyToClipboard('${sin}')">Copy</button></td>
             `;
             resultsTable.appendChild(tr);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Copied: " + text);
+            }).catch(err => {
+                console.error("Error copying text: ", err);
+            });
         }
     </script>
 </body>
