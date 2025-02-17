@@ -178,16 +178,32 @@
 
         fetchExcel();
 
-        function copyColumn(columnIndex) {
-            const rows = document.querySelectorAll('#resultsTable tbody tr');
-            let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
-            navigator.clipboard.writeText(columnText).then(() => {
-                const notification = document.getElementById('notification');
-                notification.style.display = 'block';
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 2000);
+        function processFile() {
+            const descriptions = document.getElementById('descriptions').value.split('\n').map(d => d.trim().toLowerCase()).filter(Boolean);
+            const skuType = document.getElementById('skuType').value;
+            if (excelData.length === 0) return alert("Excel data has not loaded yet.");
+            if (descriptions.length === 0) return alert("Please enter at least one description.");
+
+            const resultsTable = document.querySelector('#resultsTable tbody');
+            resultsTable.innerHTML = '';
+
+            descriptions.forEach(description => {
+                let rowIndex = excelData.findIndex(row => row[14] && row[14].toString().trim().toLowerCase() === description);
+                if (rowIndex === -1) return;
+                
+                if (skuType === "month2month" && rowIndex > 0) rowIndex -= 1;
+                if (skuType === "ondemand" && rowIndex < excelData.length - 1) rowIndex += 1;
+                
+                let row = excelData[rowIndex] || ["N/A", "N/A", "N/A"];
+                addRowToTable(row[6] || "N/A", row[7] || "N/A", row[8] || "N/A");
             });
+        }
+
+        function addRowToTable(sku, additionalDesc, sin) {
+            const resultsTable = document.querySelector('#resultsTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
+            resultsTable.appendChild(tr);
         }
     </script>
 </body>
