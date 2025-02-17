@@ -95,6 +95,19 @@
             margin-top: 10px;
         }
 
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 90%;
@@ -133,6 +146,8 @@
             <button onclick="copyColumn(1)">Copy Additional Descriptions</button>
             <button onclick="copyColumn(2)">Copy SINs</button>
         </div>
+
+        <div id="notification" class="notification">Column copied successfully!</div>
     </div>
 
     <script>
@@ -194,10 +209,14 @@
             const rows = document.querySelectorAll('#resultsTable tbody tr');
             let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
             navigator.clipboard.writeText(columnText).then(() => {
-                let alertBox = alert("Column copied successfully!");
-                setTimeout(() => alertBox.close(), 2000);
+                const notification = document.getElementById('notification');
+                notification.style.display = 'block';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 2000);
             });
         }
     </script>
 </body>
 </html>
+
