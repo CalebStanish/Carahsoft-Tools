@@ -147,7 +147,7 @@
     </div>
 
     <script>
-        const FILE_PATH = "DDdata.xlsx";
+               const FILE_PATH = "DDdata.xlsx";
         let excelData = [];
 
         async function fetchExcel() {
@@ -159,7 +159,11 @@
                 const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                // Ensure empty rows are included in parsing
+                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                
+                console.log("Total Rows Loaded:", excelData.length);
             } catch (error) {
                 alert("Failed to load Excel data.");
             }
