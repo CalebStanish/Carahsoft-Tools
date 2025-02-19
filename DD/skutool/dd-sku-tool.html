@@ -107,17 +107,6 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             display: none;
         }
-
-        @media (max-width: 768px) {
-            .container {
-                width: 90%;
-            }
-
-            .copy-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-        }
     </style>
 </head>
 <body>
@@ -158,56 +147,21 @@
     </div>
 
     <script>
-        const FILE_PATH = "DDdata.xlsx";
-        let excelData = [];
-
-        async function fetchExcel() {
-            try {
-                const response = await fetch(FILE_PATH);
-                if (!response.ok) throw new Error("Failed to fetch Excel file.");
-
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            } catch (error) {
-                alert("Failed to load Excel data.");
-            }
-        }
-
-        fetchExcel();
-
-        function processFile() {
-            const descriptions = document.getElementById('descriptions').value.split('\n').map(d => d.trim().toLowerCase()).filter(Boolean);
-            const skuType = document.getElementById('skuType').value;
-            if (excelData.length === 0) return alert("Excel data has not loaded yet.");
-            if (descriptions.length === 0) return alert("Please enter at least one description.");
-
-            const resultsTable = document.querySelector('#resultsTable tbody');
-            resultsTable.innerHTML = '';
-
-            descriptions.forEach(description => {
-                let rowIndex = excelData.findIndex(row => row[14] && row[14].toString().trim().toLowerCase() === description);
-                
-                if (rowIndex === -1) {
-                    addRowToTable("N/A", "N/A", "N/A");
-                    return;
-                }
-                
-                if (skuType === "month2month" && rowIndex > 0) rowIndex -= 1;
-                if (skuType === "ondemand" && rowIndex < excelData.length - 1) rowIndex += 1;
-                
-                let row = excelData[rowIndex] || ["N/A", "N/A", "N/A"];
-                addRowToTable(row[6] || "N/A", row[7] || "N/A", row[8] || "N/A");
+        function copyColumn(columnIndex) {
+            const rows = document.querySelectorAll('#resultsTable tbody tr');
+            let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
+            navigator.clipboard.writeText(columnText).then(() => {
+                showNotification("Column copied successfully!");
             });
         }
 
-        function addRowToTable(sku, additionalDesc, sin) {
-            const resultsTable = document.querySelector('#resultsTable tbody');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
-            resultsTable.appendChild(tr);
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
         }
     </script>
 </body>
