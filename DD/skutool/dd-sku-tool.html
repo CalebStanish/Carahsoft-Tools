@@ -147,7 +147,7 @@
     </div>
 
     <script>
-               const FILE_PATH = "DDdata.xlsx";
+        const FILE_PATH = "DDdata.xlsx";
         let excelData = [];
 
         async function fetchExcel() {
@@ -197,6 +197,29 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
             resultsTable.appendChild(tr);
+        }
+
+        function copyColumn(columnIndex) {
+            const rows = document.querySelectorAll('#resultsTable tbody tr');
+            let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
+            
+            if (!columnText.trim()) {
+                alert("No data to copy!");
+                return;
+            }
+            
+            navigator.clipboard.writeText(columnText).then(() => {
+                showNotification("Column copied successfully!");
+            });
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
         }
 
     </script>
