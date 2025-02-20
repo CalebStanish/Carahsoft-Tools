@@ -54,8 +54,8 @@
                     <th>Type</th>
                     <th>Category</th>
                     <th>Discount %</th>
-                    <th>NR %</th>
-                    <th>Reg %</th>
+                    <th>NR % <button onclick="copyColumn(5)">Copy</button></th>
+                    <th>Reg % <button onclick="copyColumn(6)">Copy</button></th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -143,8 +143,26 @@
                 tableBody.innerHTML += row;
             });
         }
+
+        function copyColumn(columnIndex) {
+            let table = document.getElementById("output-table");
+            let rows = table.getElementsByTagName("tr");
+            let textToCopy = "";
+            
+            for (let i = 1; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName("td");
+                if (cells.length > columnIndex) {
+                    textToCopy += cells[columnIndex].innerText + "\n";
+                }
+            }
+            
+            navigator.clipboard.writeText(textToCopy.trim()).then(() => {
+                alert("Column copied to clipboard");
+            }).catch(err => {
+                console.error("Error copying text: ", err);
+            });
+        }
     </script>
 </body>
 </html>
-
 
