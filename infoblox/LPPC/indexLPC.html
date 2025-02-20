@@ -104,6 +104,13 @@
             return "Unknown Category";
         }
 
+        function calculateNR(category, discount) {
+            if (discount === 0) {
+                return "0%";
+            }
+            return `${categoryNR[category] || 0}%`;
+        }
+
         function calculateReg(category, discount) {
             if (discount === 0) {
                 return "0%";
@@ -127,7 +134,7 @@
                 let type = skuData[sku] || "N/A";
                 let category = type !== "N/A" ? categorizeType(type) : "N/A";
                 let discount = parseFloat(discounts[index]) || 0;
-                let nrValue = categoryNR[category] || "N/A";
+                let nrValue = calculateNR(category, discount);
                 let regValue = type !== "N/A" ? calculateReg(category, discount) : "N/A";
                 
                 let row = `<tr>
@@ -136,7 +143,7 @@
                     <td>${type}</td>
                     <td>${category}</td>
                     <td>${discount}%</td>
-                    <td>${nrValue}%</td>
+                    <td>${nrValue}</td>
                     <td>${regValue}</td>
                 </tr>`;
                 
@@ -165,4 +172,5 @@
     </script>
 </body>
 </html>
+
 
