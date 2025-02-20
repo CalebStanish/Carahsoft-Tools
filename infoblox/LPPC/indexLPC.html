@@ -127,7 +127,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         let skuData = {};
         const categoryMap = {
@@ -143,20 +143,6 @@
             "Maintenance Services": 5,
             "Professional Services & Training": 5
         };
-
-        fetch('infobloxskudata.xlsx')
-            .then(response => response.arrayBuffer())
-            .then(data => {
-                let workbook = XLSX.read(data, { type: 'array' });
-                let sheet = workbook.Sheets[workbook.SheetNames[0]];
-                let json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                json.slice(1).forEach(row => {
-                    if (row[0] && row[1]) {
-                        skuData[row[0]] = row[1];
-                    }
-                });
-            })
-            .catch(error => console.error('Error loading the file:', error));
 
         function categorizeType(type) {
             for (let category in categoryMap) {
@@ -191,7 +177,27 @@
                 </tr>`;
             });
         }
+
+        function copyColumn(index) {
+            let table = document.getElementById("output-table");
+            let rows = table.getElementsByTagName("tr");
+            let textToCopy = "";
+            
+            for (let i = 1; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName("td");
+                if (cells.length > index) {
+                    textToCopy += cells[index].innerText + "\n";
+                }
+            }
+            
+            navigator.clipboard.writeText(textToCopy.trim()).then(() => {
+                alert("Copied to clipboard");
+            }).catch(err => {
+                console.error("Error copying text: ", err);
+            });
+        }
     </script>
 </body>
 </html>
+
 
