@@ -62,7 +62,7 @@
             
             data.forEach((row, index) => {
                 if (index > 0 && row[0] && row[1]) {
-                    skuTypeMap[row[0].trim()] = row[1].trim();
+                    skuTypeMap[row[0].trim().toUpperCase()] = row[1].trim();
                 }
             });
         }
@@ -76,13 +76,13 @@
                 "Professional Services & Training": 5,
             };
             
-            const skus = document.getElementById("skuList").value.split("\n").map(s => s.trim());
+            const skus = document.getElementById("skuList").value.split("\n").map(s => s.trim().toUpperCase());
             const prices = document.getElementById("listPricePercent").value.split("\n").map(p => parseFloat(p.trim()) || 0);
             
             let registeredPrices = skus.map((sku, index) => {
                 const type = skuTypeMap[sku] || "Other";
                 if (prices[index] === 0) {
-                    return 0;
+                    return "0";
                 }
                 if (type === "Hardware") {
                     return (prices[index] - 0.05).toFixed(2);
@@ -108,4 +108,3 @@
     </script>
 </body>
 </html>
-
