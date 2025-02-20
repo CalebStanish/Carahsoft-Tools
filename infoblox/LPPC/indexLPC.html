@@ -35,9 +35,6 @@
         th {
             background-color: #f2f2f2;
         }
-        .discount-input {
-            width: 80px;
-        }
     </style>
 </head>
 <body>
@@ -57,6 +54,7 @@
                     <th>Type</th>
                     <th>Category</th>
                     <th>Discount %</th>
+                    <th>NR %</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -67,9 +65,17 @@
         let skuData = {};
         const categoryMap = {
             "Subscription Software": ["Subscription", "Partner Subscription", "SaaS (Software as a Service)", "Subscriptions - Data Feed", "Software Perpetual"],
-            "Maintenance Services": ["Maintenance Enterprise Direct", "Maintenance Enterprise Partner", "Maintenance ISP Partner", "Maintenance ISP Direct", "Maintenance MSP Direct", "Maintenance (General Category)"],
             "Hardware": ["Hardware"],
+            "Maintenance Services": ["Maintenance Enterprise Direct", "Maintenance Enterprise Partner", "Maintenance ISP Partner", "Maintenance ISP Direct", "Maintenance MSP Direct", "Maintenance (General Category)"],
             "Professional Services & Training": ["Professional Services & Training"]
+        };
+        
+        const categoryNR = {
+            "Subscription Software": 11,
+            "Hardware": 15,
+            "Maintenance Services": 5,
+            "Professional Services & Training": 5,
+            "Unknown Category": 0
         };
 
         fetch('infobloxskudata.xlsx')
@@ -105,8 +111,9 @@
 
             skus.forEach((sku, index) => {
                 let type = skuData[sku] || "Not found";
-                let category = type !== "Not found" ? categorizeType(type) : "-";
+                let category = type !== "Not found" ? categorizeType(type) : "Unknown Category";
                 let discount = discounts[index] || "0";
+                let nrValue = categoryNR[category] || 0;
                 
                 let row = `<tr>
                     <td>${index + 1}</td>
@@ -114,6 +121,7 @@
                     <td>${type}</td>
                     <td>${category}</td>
                     <td>${discount}%</td>
+                    <td>${nrValue}%</td>
                 </tr>`;
                 
                 tableBody.innerHTML += row;
@@ -122,4 +130,3 @@
     </script>
 </body>
 </html>
-
