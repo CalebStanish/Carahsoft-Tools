@@ -3,229 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel Lookup Tool</title>
+    <title>Discount Calculator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            color: #333;
-        }
-
-        h2 {
-            text-align: center;
-            color: #444;
-        }
-
-        .container {
-            max-width: 700px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
-        }
-
-        textarea, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            transition: 0.3s;
-            margin: 5px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: #fff;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        .copy-buttons {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 10px;
-        }
-
-        .notification {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: none;
-        }
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        .container { display: flex; gap: 20px; align-items: flex-start; justify-content: space-between; }
+        .column { flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0px 0px 5px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        th { background-color: #007BFF; color: white; }
+        button { width: 100%; padding: 10px; background-color: #007BFF; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        h3 { text-align: center; }
+        textarea { width: 100%; height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: monospace; }
     </style>
 </head>
 <body>
-    <div class="notification" id="notification">Column copied successfully!</div>
-    
+    <h2 style="text-align: center;">Discount Calculator</h2>
     <div class="container">
-        <h2>DataDog SKU Search</h2>
-
-        <label for="skuType">Select SKU Type:</label>
-        <select id="skuType">
-            <option value="annual" selected>Annual</option>
-            <option value="month2month">Month-to-Month</option>
-            <option value="ondemand">On-Demand</option>
-        </select>
-
-        <label for="descriptions">Enter up to 15 Descriptions:</label>
-        <textarea id="descriptions" rows="5" placeholder="Enter descriptions, one per line..."></textarea>
-
-        <button onclick="processFile()">Search</button>
-
-        <h3>Results:</h3>
-        <table id="resultsTable">
-            <thead>
-                <tr>
-                    <th>SKU</th>
-                    <th>Additional Description</th>
-                    <th>SIN</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <div class="copy-buttons">
-            <button onclick="copyColumn(0)">Copy SKUs</button>
-            <button onclick="copyColumn(1)">Copy Additional Descriptions</button>
-            <button onclick="copyColumn(2)">Copy SINs</button>
+        <div class="column">
+            <h3>Input Data</h3>
+            <label>SKU List:</label>
+            <textarea id="skuList"></textarea>
+            <label>List Price %:</label>
+            <textarea id="listPricePercent"></textarea>
+            <button onclick="calculateDiscounts()">Calculate Discounts</button>
+        </div>
+        <div class="column">
+            <h3>Registered Prices</h3>
+            <textarea id="registeredPrices" readonly></textarea>
+            <button onclick="copyToClipboard('registeredPrices')">Copy</button>
+        </div>
+        <div class="column">
+            <h3>Non-Registered Prices</h3>
+            <textarea id="nonRegisteredPrices" readonly></textarea>
+            <button onclick="copyToClipboard('nonRegisteredPrices')">Copy</button>
         </div>
     </div>
-
+    
     <script>
-               const FILE_PATH = "DDdata.xlsx";
-        let excelData = [];
-
-        async function fetchExcel() {
-            try {
-                const response = await fetch(FILE_PATH);
-                if (!response.ok) throw new Error("Failed to fetch Excel file.");
-
-                const arrayBuffer = await response.arrayBuffer();
-                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                
-                // Ensure empty rows are included in parsing
-                excelData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-                
-                console.log("Total Rows Loaded:", excelData.length);
-            } catch (error) {
-                alert("Failed to load Excel data.");
-            }
-        }
-
-        fetchExcel();
-
-        function processFile() {
-            const descriptions = document.getElementById('descriptions').value.split('\n').map(d => d.trim().toLowerCase()).filter(Boolean);
-            const skuType = document.getElementById('skuType').value;
-            if (excelData.length === 0) return alert("Excel data has not loaded yet.");
-            if (descriptions.length === 0) return alert("Please enter at least one description.");
-
-            const resultsTable = document.querySelector('#resultsTable tbody');
-            resultsTable.innerHTML = '';
-
-            descriptions.forEach(description => {
-                let rowIndex = excelData.findIndex(row => row[14] && row[14].toString().trim().toLowerCase() === description);
-                
-                if (rowIndex === -1) {
-                    addRowToTable("N/A", "N/A", "N/A");
-                    return;
+        let skuTypeMap = {};
+        
+        async function fetchExcelData() {
+            const response = await fetch('infobloxskudata.xlsx');
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            console.log(`Total rows searched: ${data.length - 1}`);
+            
+            data.forEach((row, index) => {
+                if (index > 0 && row[0] && row[1]) {
+                    const cleanedSku = row[0].trim().toUpperCase();
+                    const cleanedType = row[1].trim();
+                    skuTypeMap[cleanedSku] = cleanedType;
                 }
-                
-                if (skuType === "month2month" && rowIndex > 0) rowIndex -= 1;
-                if (skuType === "ondemand" && rowIndex < excelData.length - 1) rowIndex += 1;
-                
-                let row = excelData[rowIndex] || ["N/A", "N/A", "N/A"];
-                addRowToTable(row[6] || "N/A", row[7] || "N/A", row[8] || "N/A");
             });
         }
-
-        function addRowToTable(sku, additionalDesc, sin) {
-            const resultsTable = document.querySelector('#resultsTable tbody');
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${sku}</td><td>${additionalDesc}</td><td>${sin}</td>`;
-            resultsTable.appendChild(tr);
-        }
-
-        function copyColumn(columnIndex) {
-            const rows = document.querySelectorAll('#resultsTable tbody tr');
-            let columnText = Array.from(rows).map(row => row.children[columnIndex].textContent).join('\n');
+        
+        async function calculateDiscounts() {
+            if (Object.keys(skuTypeMap).length === 0) await fetchExcelData();
+            const typeMapping = {
+                "Subscription": 11,
+                "Subscription Software": 11,
+                "Hardware": 15,
+                "Hardware Maintenance": 5,
+                "Professional Services & Training": 5,
+            };
             
-            if (!columnText.trim()) {
-                alert("No data to copy!");
-                return;
-            }
+            const skus = document.getElementById("skuList").value.split("\n").map(s => s.trim().toUpperCase());
+            const prices = document.getElementById("listPricePercent").value.split("\n").map(p => parseFloat(p.trim()) || 0);
             
-            navigator.clipboard.writeText(columnText).then(() => {
-                showNotification("Column copied successfully!");
-            });
+            let registeredPrices = skus.map((sku, index) => {
+                const type = skuTypeMap[sku] || "Other";
+                console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
+                
+                if (prices[index] === 0) {
+                    return "0";
+                }
+                if (type === "Hardware") {
+                    return (prices[index] - 0.05).toFixed(2);
+                } else {
+                    return (prices[index] - 0.03).toFixed(2);
+                }
+            }).join("\n");
+            
+            let nonRegisteredPrices = skus.map((sku) => {
+                const type = skuTypeMap[sku] || "Other";
+                console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
+                return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "0%";
+            }).join("\n");
+            
+            document.getElementById("registeredPrices").value = registeredPrices;
+            document.getElementById("nonRegisteredPrices").value = nonRegisteredPrices;
         }
-
-        function showNotification(message) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.style.display = 'block';
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 2000);
+        
+        function copyToClipboard(id) {
+            const textarea = document.getElementById(id);
+            textarea.select();
+            document.execCommand("copy");
         }
-
     </script>
 </body>
 </html>
+
