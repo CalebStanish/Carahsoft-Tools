@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discount Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 20px auto; background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        .container { display: flex; gap: 20px; align-items: flex-start; justify-content: space-between; }
+        .column { flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0px 0px 5px rgba(0,0,0,0.1); }
+        .input-container { display: flex; gap: 10px; width: 100%; }
+        .input-container textarea { flex: 1; height: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; }
+        .output-container textarea { width: 100%; height: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; }
+        button { width: 100%; padding: 10px; background-color: #007BFF; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        h3 { text-align: center; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Discount Calculator</h2>
+    <div class="container">
+        <div class="column">
+            <h3>Input Data</h3>
+            <div class="input-container">
+                <div>
+                    <label>SKU List:</label>
+                    <textarea id="skuList"></textarea>
+                </div>
+                <div>
+                    <label>List Price %:</label>
+                    <textarea id="listPricePercent"></textarea>
+                </div>
+            </div>
+            <button onclick="calculateDiscounts()">Calculate Discounts</button>
+        </div>
+        <div class="column">
+            <h3>Registered Prices</h3>
+            <div class="output-container">
+                <textarea id="registeredPrices" readonly></textarea>
+            </div>
+            <button onclick="copyToClipboard('registeredPrices')">Copy</button>
+        </div>
+        <div class="column">
+            <h3>Non-Registered Prices</h3>
+            <div class="output-container">
+                <textarea id="nonRegisteredPrices" readonly></textarea>
+            </div>
+            <button onclick="copyToClipboard('nonRegisteredPrices')">Copy</button>
+        </div>
+    </div>
+    
+    <script>
+        let skuTypeMap = {};
+        
+        async function fetchExcelData() {
+            const response = await fetch('infobloxskudata.xlsx');
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            data.forEach((row, index) => {
+                if (index > 0 && row[0] && row[1]) {
+                    skuTypeMap[row[0]] = row[1];
+                }
+            });
+        }
+        
+        async function calculateDiscounts() {
+            if (Object.keys(skuTypeMap).length === 0) await fetchExcelData();
+            const typeMapping = {
+                "Subscription Software": 11,
+                "Hardware": 15,
+                "Hardware Maintenance": 5,
+                "Professional Services & Training": 5,
+            };
+            
+            const skus = document.getElementById("skuList").value.split("\n").map(s => s.trim());
+            const prices = document.getElementById("listPricePercent").value.split("\n").map(p => parseFloat(p.trim()) || 0);
+            
+            let registeredPrices = skus.map((sku, index) => {
+                const type = skuTypeMap[sku] || "Other";
+                const discount = type === "Hardware" ? 0.95 : 0.97;
+                return prices[index] === 0 ? 0 : (prices[index] * discount).toFixed(2);
+            }).join("\n");
+            
+            let nonRegisteredPrices = skus.map((sku) => {
+                const type = skuTypeMap[sku] || "Other";
+                return (typeMapping[type] || 0) + "%";
+            }).join("\n");
+            
+            document.getElementById("registeredPrices").value = registeredPrices;
+            document.getElementById("nonRegisteredPrices").value = nonRegisteredPrices;
+        }
+        
+        function copyToClipboard(id) {
+            const textarea = document.getElementById(id);
+            textarea.select();
+            document.execCommand("copy");
+        }
+    </script>
+</body>
+</html>
