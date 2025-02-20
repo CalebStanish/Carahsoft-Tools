@@ -51,6 +51,8 @@
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
             
+            console.log(`Total rows searched: ${data.length - 1}`);
+            
             data.forEach((row, index) => {
                 if (index > 0 && row[0] && row[1]) {
                     const cleanedSku = row[0].trim().toUpperCase();
@@ -74,9 +76,12 @@
             const prices = document.getElementById("listPricePercent").value.split("\n").map(p => parseFloat(p.trim()) || 0);
             
             let registeredPrices = skus.map((sku, index) => {
-                const type = skuTypeMap[sku] || "Other";
+                const type = skuTypeMap[sku] || "N/A";
                 console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
                 
+                if (type === "N/A") {
+                    return "N/A";
+                }
                 if (prices[index] === 0) {
                     return "0";
                 }
@@ -88,9 +93,9 @@
             }).join("\n");
             
             let nonRegisteredPrices = skus.map((sku) => {
-                const type = skuTypeMap[sku] || "Other";
+                const type = skuTypeMap[sku] || "N/A";
                 console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
-                return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "0%";
+                return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "N/A";
             }).join("\n");
             
             document.getElementById("registeredPrices").value = registeredPrices;
@@ -105,5 +110,3 @@
     </script>
 </body>
 </html>
-
-
