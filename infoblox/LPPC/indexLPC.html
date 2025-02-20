@@ -40,7 +40,8 @@
 <body>
     <div id="input-container">
         <h1>SKU Search</h1>
-        <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10" cols="40"></textarea>
+        <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10" cols="30"></textarea>
+        <input type="number" id="discount" placeholder="Enter Discount %" min="0" max="100">
         <button onclick="searchSKUs()">Search</button>
     </div>
     <div id="output-container">
@@ -52,6 +53,7 @@
                     <th>SKU</th>
                     <th>Type</th>
                     <th>Category</th>
+                    <th>Discount Applied</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -94,6 +96,7 @@
 
         function searchSKUs() {
             let input = document.getElementById('search').value.trim();
+            let discount = document.getElementById('discount').value || "0";
             let skus = input.split(/\r?\n/).map(s => s.trim());
             let tableBody = document.querySelector('#output-table tbody');
             tableBody.innerHTML = "";
@@ -107,6 +110,7 @@
                     <td>${sku}</td>
                     <td>${type}</td>
                     <td>${category}</td>
+                    <td>${discount}%</td>
                 </tr>`;
                 
                 tableBody.innerHTML += row;
@@ -115,4 +119,5 @@
     </script>
 </body>
 </html>
+
 
