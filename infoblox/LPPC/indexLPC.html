@@ -3,110 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discount Calculator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        .container { display: flex; gap: 20px; align-items: flex-start; justify-content: space-between; }
-        .column { flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0px 0px 5px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        th { background-color: #007BFF; color: white; }
-        button { width: 100%; padding: 10px; background-color: #007BFF; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-top: 10px; }
-        button:hover { background-color: #0056b3; }
-        h3 { text-align: center; }
-        textarea { width: 100%; height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: monospace; }
-    </style>
+    <title>SKU Search</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
-    <h2 style="text-align: center;">Discount Calculator</h2>
-    <div class="container">
-        <div class="column">
-            <h3>Input Data</h3>
-            <label>SKU List:</label>
-            <textarea id="skuList"></textarea>
-            <label>List Price %:</label>
-            <textarea id="listPricePercent"></textarea>
-            <button onclick="calculateDiscounts()">Calculate Discounts</button>
-        </div>
-        <div class="column">
-            <h3>Registered Prices</h3>
-            <textarea id="registeredPrices" readonly></textarea>
-            <button onclick="copyToClipboard('registeredPrices')">Copy</button>
-        </div>
-        <div class="column">
-            <h3>Non-Registered Prices</h3>
-            <textarea id="nonRegisteredPrices" readonly></textarea>
-            <button onclick="copyToClipboard('nonRegisteredPrices')">Copy</button>
-        </div>
-    </div>
-    
+    <h1>SKU Search</h1>
+    <input type="file" id="upload" accept=".xlsx">
+    <input type="text" id="search" placeholder="Enter SKU">
+    <button onclick="searchSKU()">Search</button>
+    <p id="output"></p>
+
     <script>
-        let skuTypeMap = {};
-        
-        async function fetchExcelData() {
-            const response = await fetch('infobloxskudata.xlsx');
-            const arrayBuffer = await response.arrayBuffer();
-            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            
-            console.log(`Total rows searched: ${data.length - 1}`);
-            
-            data.forEach((row, index) => {
-                if (index > 0 && row[0] && row[1]) {
-                    const cleanedSku = row[0].trim().toUpperCase();
-                    const cleanedType = row[1].trim();
-                    skuTypeMap[cleanedSku] = cleanedType;
-                }
-            });
-        }
-        
-        async function calculateDiscounts() {
-            if (Object.keys(skuTypeMap).length === 0) await fetchExcelData();
-            const typeMapping = {
-                "Subscription": 11,
-                "Subscription Software": 11,
-                "Hardware": 15,
-                "Hardware Maintenance": 5,
-                "Professional Services & Training": 5,
-            };
-            
-            const skus = document.getElementById("skuList").value.split("\n").map(s => s.trim().toUpperCase());
-            const prices = document.getElementById("listPricePercent").value.split("\n").map(p => parseFloat(p.trim()) || 0);
-            
-            let registeredPrices = skus.map((sku, index) => {
-                const type = skuTypeMap[sku] || "N/A";
-                console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
+        let skuData = {};
+        const categoryMap = {
+            "Subscription Software": ["Subscription", "Partner Subscription", "SaaS (Software as a Service)", "Subscriptions - Data Feed", "Software Perpetual"],
+            "Maintenance Services": ["Maintenance Enterprise Direct", "Maintenance Enterprise Partner", "Maintenance ISP Partner", "Maintenance ISP Direct", "Maintenance MSP Direct", "Maintenance (General Category)"],
+            "Hardware": ["Hardware"],
+            "Professional Services & Training": ["Professional Services & Training"]
+        };
+
+        document.getElementById('upload').addEventListener('change', function(event) {
+            let file = event.target.files[0];
+            let reader = new FileReader();
+
+            reader.onload = function(e) {
+                let data = new Uint8Array(e.target.result);
+                let workbook = XLSX.read(data, { type: 'array' });
+                let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                let json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                 
-                if (type === "N/A") {
-                    return "N/A";
+                json.slice(1).forEach(row => {
+                    if (row[0] && row[1]) {
+                        skuData[row[0]] = row[1];
+                    }
+                });
+                alert('File uploaded successfully!');
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
+
+        function categorizeType(type) {
+            for (let category in categoryMap) {
+                if (categoryMap[category].includes(type)) {
+                    return category;
                 }
-                if (prices[index] === 0) {
-                    return "0";
-                }
-                if (type === "Hardware") {
-                    return (prices[index] - 0.05).toFixed(2);
-                } else {
-                    return (prices[index] - 0.03).toFixed(2);
-                }
-            }).join("\n");
-            
-            let nonRegisteredPrices = skus.map((sku) => {
-                const type = skuTypeMap[sku] || "N/A";
-                console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
-                return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "N/A";
-            }).join("\n");
-            
-            document.getElementById("registeredPrices").value = registeredPrices;
-            document.getElementById("nonRegisteredPrices").value = nonRegisteredPrices;
+            }
+            return "Unknown Category";
         }
-        
-        function copyToClipboard(id) {
-            const textarea = document.getElementById(id);
-            textarea.select();
-            document.execCommand("copy");
+
+        function searchSKU() {
+            let sku = document.getElementById('search').value.trim();
+            let output = document.getElementById('output');
+            
+            if (skuData[sku]) {
+                let category = categorizeType(skuData[sku]);
+                output.innerText = `Category: ${category}`;
+            } else {
+                output.innerText = "SKU not found.";
+            }
         }
     </script>
 </body>
 </html>
+
