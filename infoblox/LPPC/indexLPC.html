@@ -99,7 +99,7 @@
 
         function searchSKUs() {
             let skus = document.getElementById('search').value.trim().split(/\r?\n/).map(s => s.trim());
-            let discounts = document.getElementById('discounts').value.trim().split(/\r?\n/).map(d => d.trim());
+            let discounts = document.getElementById('discounts').value.trim().split(/\r?\n/).map(d => (parseFloat(d) * 100).toFixed(0));
             let tableBody = document.querySelector('#output-table tbody');
             tableBody.innerHTML = "";
 
