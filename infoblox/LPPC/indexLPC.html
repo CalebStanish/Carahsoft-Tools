@@ -124,11 +124,11 @@
             tableBody.innerHTML = "";
 
             skus.forEach((sku, index) => {
-                let type = skuData[sku] || "Not found";
-                let category = type !== "Not found" ? categorizeType(type) : "Unknown Category";
+                let type = skuData[sku] || "N/A";
+                let category = type !== "N/A" ? categorizeType(type) : "N/A";
                 let discount = parseFloat(discounts[index]) || 0;
-                let nrValue = categoryNR[category] || 0;
-                let regValue = calculateReg(category, discount);
+                let nrValue = categoryNR[category] || "N/A";
+                let regValue = type !== "N/A" ? calculateReg(category, discount) : "N/A";
                 
                 let row = `<tr>
                     <td>${index + 1}</td>
@@ -146,4 +146,5 @@
     </script>
 </body>
 </html>
+
 
