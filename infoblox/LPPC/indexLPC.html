@@ -5,12 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SKU Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #input-container {
+            width: 40%;
+            padding-right: 20px;
+        }
+        #output-container {
+            width: 60%;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <h1>SKU Search</h1>
-    <textarea id="search" placeholder="Enter SKUs (one per line)" rows="6" cols="50"></textarea>
-    <button onclick="searchSKUs()">Search</button>
-    <div id="output"></div>
+    <div id="input-container">
+        <h1>SKU Search</h1>
+        <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10" cols="40"></textarea>
+        <button onclick="searchSKUs()">Search</button>
+    </div>
+    <div id="output-container">
+        <h2>Results</h2>
+        <table id="output-table">
+            <thead>
+                <tr>
+                    <th>Line #</th>
+                    <th>SKU</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 
     <script>
         let skuData = {};
@@ -49,18 +95,24 @@
         function searchSKUs() {
             let input = document.getElementById('search').value.trim();
             let skus = input.split(/\r?\n/).map(s => s.trim());
-            let output = document.getElementById('output');
-            output.innerHTML = "";
+            let tableBody = document.querySelector('#output-table tbody');
+            tableBody.innerHTML = "";
 
-            skus.forEach(sku => {
-                if (skuData[sku]) {
-                    let category = categorizeType(skuData[sku]);
-                    output.innerHTML += `<p>SKU: ${sku} - Category: ${category}</p>`;
-                } else {
-                    output.innerHTML += `<p>SKU: ${sku} - Not found</p>`;
-                }
+            skus.forEach((sku, index) => {
+                let type = skuData[sku] || "Not found";
+                let category = type !== "Not found" ? categorizeType(type) : "-";
+                
+                let row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${sku}</td>
+                    <td>${type}</td>
+                    <td>${category}</td>
+                </tr>`;
+                
+                tableBody.innerHTML += row;
             });
         }
     </script>
 </body>
 </html>
+
