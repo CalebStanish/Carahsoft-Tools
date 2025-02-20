@@ -55,6 +55,7 @@
                     <th>Category</th>
                     <th>Discount %</th>
                     <th>NR %</th>
+                    <th>Reg %</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -103,6 +104,19 @@
             return "Unknown Category";
         }
 
+        function calculateReg(category, discount) {
+            if (discount === 0) {
+                return "0%";
+            }
+            if (category === "Hardware") {
+                return `${Math.max(discount - 5, 0)}%`;
+            }
+            if (["Subscription Software", "Maintenance Services", "Professional Services & Training"].includes(category)) {
+                return `${Math.max(discount - 3, 0)}%`;
+            }
+            return "0%";
+        }
+
         function searchSKUs() {
             let skus = document.getElementById('search').value.trim().split(/\r?\n/).map(s => s.trim());
             let discounts = document.getElementById('discounts').value.trim().split(/\r?\n/).map(d => (parseFloat(d) * 100).toFixed(0));
@@ -112,8 +126,9 @@
             skus.forEach((sku, index) => {
                 let type = skuData[sku] || "Not found";
                 let category = type !== "Not found" ? categorizeType(type) : "Unknown Category";
-                let discount = discounts[index] || "0";
+                let discount = parseFloat(discounts[index]) || 0;
                 let nrValue = categoryNR[category] || 0;
+                let regValue = calculateReg(category, discount);
                 
                 let row = `<tr>
                     <td>${index + 1}</td>
@@ -122,6 +137,7 @@
                     <td>${category}</td>
                     <td>${discount}%</td>
                     <td>${nrValue}%</td>
+                    <td>${regValue}</td>
                 </tr>`;
                 
                 tableBody.innerHTML += row;
@@ -130,3 +146,4 @@
     </script>
 </body>
 </html>
+
