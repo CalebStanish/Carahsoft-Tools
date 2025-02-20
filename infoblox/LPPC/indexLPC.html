@@ -6,12 +6,12 @@
     <title>Discount Calculator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 20px auto; background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 20px auto; background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
         .container { display: flex; gap: 20px; align-items: flex-start; justify-content: space-between; }
         .column { flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0px 0px 5px rgba(0,0,0,0.1); }
-        .input-container { display: flex; gap: 10px; width: 100%; }
-        .input-container textarea { flex: 1; height: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; }
-        .output-container textarea { width: 100%; height: 300px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        th { background-color: #007BFF; color: white; }
         button { width: 100%; padding: 10px; background-color: #007BFF; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-top: 10px; }
         button:hover { background-color: #0056b3; }
         h3 { text-align: center; }
@@ -22,31 +22,27 @@
     <div class="container">
         <div class="column">
             <h3>Input Data</h3>
-            <div class="input-container">
-                <div>
-                    <label>SKU List:</label>
-                    <textarea id="skuList"></textarea>
-                </div>
-                <div>
-                    <label>List Price %:</label>
-                    <textarea id="listPricePercent"></textarea>
-                </div>
-            </div>
+            <table>
+                <tr><th>SKU List</th><th>List Price %</th></tr>
+                <tbody id="inputTable"></tbody>
+            </table>
             <button onclick="calculateDiscounts()">Calculate Discounts</button>
         </div>
         <div class="column">
             <h3>Registered Prices</h3>
-            <div class="output-container">
-                <textarea id="registeredPrices" readonly></textarea>
-            </div>
-            <button onclick="copyToClipboard('registeredPrices')">Copy</button>
+            <table>
+                <tr><th>Price</th></tr>
+                <tbody id="registeredTable"></tbody>
+            </table>
+            <button onclick="copyTableToClipboard('registeredTable')">Copy</button>
         </div>
         <div class="column">
             <h3>Non-Registered Prices</h3>
-            <div class="output-container">
-                <textarea id="nonRegisteredPrices" readonly></textarea>
-            </div>
-            <button onclick="copyToClipboard('nonRegisteredPrices')">Copy</button>
+            <table>
+                <tr><th>Price</th></tr>
+                <tbody id="nonRegisteredTable"></tbody>
+            </table>
+            <button onclick="copyTableToClipboard('nonRegisteredTable')">Copy</button>
         </div>
     </div>
     
@@ -67,6 +63,15 @@
             });
         }
         
+        function populateInputTable(skus, prices) {
+            const table = document.getElementById("inputTable");
+            table.innerHTML = "";
+            skus.forEach((sku, index) => {
+                let row = `<tr><td>${sku}</td><td>${prices[index]}</td></tr>`;
+                table.innerHTML += row;
+            });
+        }
+        
         async function calculateDiscounts() {
             if (Object.keys(skuTypeMap).length === 0) await fetchExcelData();
             const typeMapping = {
@@ -76,34 +81,33 @@
                 "Professional Services & Training": 5,
             };
             
-            const skus = document.getElementById("skuList").value.split("\n").map(s => s.trim().toUpperCase());
-            const prices = document.getElementById("listPricePercent").value.split("\n").map(p => parseFloat(p.trim()) || 0);
+            let skus = prompt("Paste SKU List (one per line)").split("\n").map(s => s.trim().toUpperCase());
+            let prices = prompt("Paste List Price % (one per line)").split("\n").map(p => parseFloat(p.trim()) || 0);
             
-            let registeredPrices = skus.map((sku, index) => {
+            populateInputTable(skus, prices);
+            
+            let registeredTable = document.getElementById("registeredTable");
+            let nonRegisteredTable = document.getElementById("nonRegisteredTable");
+            registeredTable.innerHTML = "";
+            nonRegisteredTable.innerHTML = "";
+            
+            skus.forEach((sku, index) => {
                 const type = skuTypeMap[sku] || "Other";
-                if (prices[index] === 0) {
-                    return "0";
-                }
-                if (type === "Hardware") {
-                    return (prices[index] - 0.05).toFixed(2);
-                } else {
-                    return (prices[index] - 0.03).toFixed(2);
-                }
-            }).join("\n");
-            
-            let nonRegisteredPrices = skus.map((sku) => {
-                const type = skuTypeMap[sku] || "Other";
-                return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "0%";
-            }).join("\n");
-            
-            document.getElementById("registeredPrices").value = registeredPrices;
-            document.getElementById("nonRegisteredPrices").value = nonRegisteredPrices;
+                let registeredPrice = prices[index] === 0 ? 0 : (type === "Hardware" ? prices[index] - 0.05 : prices[index] - 0.03);
+                let nonRegisteredPrice = typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "0%";
+                
+                registeredTable.innerHTML += `<tr><td>${registeredPrice.toFixed(2)}</td></tr>`;
+                nonRegisteredTable.innerHTML += `<tr><td>${nonRegisteredPrice}</td></tr>`;
+            });
         }
         
-        function copyToClipboard(id) {
-            const textarea = document.getElementById(id);
-            textarea.select();
-            document.execCommand("copy");
+        function copyTableToClipboard(tableId) {
+            let table = document.getElementById(tableId);
+            let text = "";
+            for (let row of table.rows) {
+                text += row.cells[0].innerText + "\n";
+            }
+            navigator.clipboard.writeText(text).then(() => alert("Copied!"));
         }
     </script>
 </body>
