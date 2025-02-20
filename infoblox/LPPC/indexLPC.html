@@ -53,7 +53,9 @@
             
             data.forEach((row, index) => {
                 if (index > 0 && row[0] && row[1]) {
-                    skuTypeMap[row[0].trim().toUpperCase()] = row[1].trim();
+                    const cleanedSku = row[0].trim().toUpperCase();
+                    const cleanedType = row[1].trim();
+                    skuTypeMap[cleanedSku] = cleanedType;
                 }
             });
         }
@@ -61,6 +63,7 @@
         async function calculateDiscounts() {
             if (Object.keys(skuTypeMap).length === 0) await fetchExcelData();
             const typeMapping = {
+                "Subscription": 11,
                 "Subscription Software": 11,
                 "Hardware": 15,
                 "Hardware Maintenance": 5,
@@ -72,6 +75,8 @@
             
             let registeredPrices = skus.map((sku, index) => {
                 const type = skuTypeMap[sku] || "Other";
+                console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
+                
                 if (prices[index] === 0) {
                     return "0";
                 }
@@ -84,6 +89,7 @@
             
             let nonRegisteredPrices = skus.map((sku) => {
                 const type = skuTypeMap[sku] || "Other";
+                console.log(`SKU: ${sku} -> Type: ${type}`); // Debugging line
                 return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "0%";
             }).join("\n");
             
@@ -99,4 +105,5 @@
     </script>
 </body>
 </html>
+
 
