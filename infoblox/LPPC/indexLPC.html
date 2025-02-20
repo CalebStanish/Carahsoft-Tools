@@ -8,24 +8,33 @@
     <style>
         body {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
+            align-items: center;
             font-family: Arial, sans-serif;
             margin: 20px;
             background-color: #f4f4f4;
         }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .content {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
         #input-container {
             width: 40%;
             padding: 20px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         #output-container {
-            width: 60%;
+            width: 58%;
             padding: 20px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             overflow-x: auto;
         }
         h1, h2 {
@@ -63,6 +72,7 @@
             border: 1px solid #ddd;
             padding: 10px;
             text-align: center;
+            white-space: nowrap;
         }
         th {
             background-color: #007bff;
@@ -86,28 +96,32 @@
     </style>
 </head>
 <body>
-    <div id="input-container">
+    <div class="container">
         <h1>SKU Search</h1>
-        <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10"></textarea>
-        <textarea id="discounts" placeholder="Enter Discounts (one per line)" rows="10"></textarea>
-        <button onclick="searchSKUs()">Search</button>
-    </div>
-    <div id="output-container">
-        <h2>Results</h2>
-        <table id="output-table">
-            <thead>
-                <tr>
-                    <th>Line #</th>
-                    <th>SKU</th>
-                    <th>Type</th>
-                    <th>Category</th>
-                    <th>Discount %</th>
-                    <th>NR % <button class="copy-btn" onclick="copyColumn(5)">Copy</button></th>
-                    <th>Reg % <button class="copy-btn" onclick="copyColumn(6)">Copy</button></th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="content">
+            <div id="input-container">
+                <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10"></textarea>
+                <textarea id="discounts" placeholder="Enter Discounts (one per line)" rows="10"></textarea>
+                <button onclick="searchSKUs()">Search</button>
+            </div>
+            <div id="output-container">
+                <h2>Results</h2>
+                <table id="output-table">
+                    <thead>
+                        <tr>
+                            <th>Line #</th>
+                            <th>SKU</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Discount %</th>
+                            <th>NR % <button class="copy-btn" onclick="copyColumn(5)">Copy</button></th>
+                            <th>Reg % <button class="copy-btn" onclick="copyColumn(6)">Copy</button></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
     
     <script>
