@@ -62,7 +62,7 @@
             
             data.forEach((row, index) => {
                 if (index > 0 && row[0] && row[1]) {
-                    skuTypeMap[row[0]] = row[1];
+                    skuTypeMap[row[0].trim()] = row[1].trim();
                 }
             });
         }
@@ -81,13 +81,19 @@
             
             let registeredPrices = skus.map((sku, index) => {
                 const type = skuTypeMap[sku] || "Other";
-                const discount = type === "Hardware" ? 0.95 : 0.97;
-                return prices[index] === 0 ? 0 : (prices[index] * discount).toFixed(2);
+                if (prices[index] === 0) {
+                    return 0;
+                }
+                if (type === "Hardware") {
+                    return (prices[index] - 0.05).toFixed(2);
+                } else {
+                    return (prices[index] - 0.03).toFixed(2);
+                }
             }).join("\n");
             
             let nonRegisteredPrices = skus.map((sku) => {
                 const type = skuTypeMap[sku] || "Other";
-                return (typeMapping[type] || 0) + "%";
+                return typeMapping.hasOwnProperty(type) ? typeMapping[type] + "%" : "0%";
             }).join("\n");
             
             document.getElementById("registeredPrices").value = registeredPrices;
@@ -102,3 +108,4 @@
     </script>
 </body>
 </html>
+
