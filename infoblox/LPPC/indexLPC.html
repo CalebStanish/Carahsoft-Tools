@@ -15,8 +15,8 @@
             background-color: #f4f4f4;
         }
         .container {
-            width: 90%;
-            max-width: 1200px;
+            width: 95%;
+            max-width: 1400px;
             background: #ffffff;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -26,16 +26,19 @@
         .content {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
             width: 100%;
+            gap: 20px;
         }
         #input-container {
-            width: 40%;
+            width: 35%;
             padding: 20px;
         }
         #output-container {
-            width: 58%;
+            width: 65%;
             padding: 20px;
             overflow-x: auto;
+            max-height: 500px;
         }
         h1, h2 {
             text-align: center;
@@ -67,12 +70,13 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            table-layout: fixed;
         }
         th, td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: center;
-            white-space: nowrap;
+            word-wrap: break-word;
         }
         th {
             background-color: #007bff;
