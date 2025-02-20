@@ -8,10 +8,9 @@
 </head>
 <body>
     <h1>SKU Search</h1>
-    <input type="file" id="upload" accept=".xlsx">
-    <input type="text" id="search" placeholder="Enter SKU">
-    <button onclick="searchSKU()">Search</button>
-    <p id="output"></p>
+    <textarea id="search" placeholder="Enter SKUs (one per line)" rows="6" cols="50"></textarea>
+    <button onclick="searchSKUs()">Search</button>
+    <div id="output"></div>
 
     <script>
         let skuData = {};
@@ -22,12 +21,9 @@
             "Professional Services & Training": ["Professional Services & Training"]
         };
 
-        document.getElementById('upload').addEventListener('change', function(event) {
-            let file = event.target.files[0];
-            let reader = new FileReader();
-
-            reader.onload = function(e) {
-                let data = new Uint8Array(e.target.result);
+        fetch('infobloxskudata.xlsx')
+            .then(response => response.arrayBuffer())
+            .then(data => {
                 let workbook = XLSX.read(data, { type: 'array' });
                 let sheet = workbook.Sheets[workbook.SheetNames[0]];
                 let json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -37,11 +33,9 @@
                         skuData[row[0]] = row[1];
                     }
                 });
-                alert('File uploaded successfully!');
-            };
-
-            reader.readAsArrayBuffer(file);
-        });
+                console.log('File loaded successfully!');
+            })
+            .catch(error => console.error('Error loading the file:', error));
 
         function categorizeType(type) {
             for (let category in categoryMap) {
@@ -52,18 +46,21 @@
             return "Unknown Category";
         }
 
-        function searchSKU() {
-            let sku = document.getElementById('search').value.trim();
+        function searchSKUs() {
+            let input = document.getElementById('search').value.trim();
+            let skus = input.split(/\r?\n/).map(s => s.trim());
             let output = document.getElementById('output');
-            
-            if (skuData[sku]) {
-                let category = categorizeType(skuData[sku]);
-                output.innerText = `Category: ${category}`;
-            } else {
-                output.innerText = "SKU not found.";
-            }
+            output.innerHTML = "";
+
+            skus.forEach(sku => {
+                if (skuData[sku]) {
+                    let category = categorizeType(skuData[sku]);
+                    output.innerHTML += `<p>SKU: ${sku} - Category: ${category}</p>`;
+                } else {
+                    output.innerHTML += `<p>SKU: ${sku} - Not found</p>`;
+                }
+            });
         }
     </script>
 </body>
 </html>
-
