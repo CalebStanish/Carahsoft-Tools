@@ -112,18 +112,12 @@
     
     <script>
         let skuData = {};
-        const categoryMap = {
-            "Subscription Software": ["Subscription", "SaaS", "Software Perpetual", "Data Feed"],
-            "Hardware": ["Hardware"],
-            "Maintenance Services": ["Maintenance", "Enterprise Direct", "Enterprise Partner", "ISP Partner", "ISP Direct", "MSP Direct"],
-            "Professional Services & Training": ["Training", "Professional Services"]
-        };
-        
         const categoryNR = {
             "Subscription Software": 11,
             "Hardware": 15,
             "Maintenance Services": 5,
-            "Professional Services & Training": 5
+            "Professional Services & Training": 5,
+            "Unknown Category": 0
         };
 
         fetch('infobloxskudata.xlsx')
@@ -140,13 +134,14 @@
             })
             .catch(error => console.error('Error loading the file:', error));
 
-        function categorizeType(type) {
-            for (let category in categoryMap) {
-                if (categoryMap[category].some(keyword => type.includes(keyword))) {
-                    return category;
-                }
-            }
-            return "Unknown Category";
+        function calculateNR(category, discount) {
+            if (discount === 0) return "0%";
+            return `${categoryNR[category] || 0}%`;
+        }
+
+        function calculateReg(category, discount) {
+            if (discount === 0) return "0%";
+            return category === "Hardware" ? `${Math.max(discount - 5, 0)}%` : `${Math.max(discount - 3, 0)}%`;
         }
 
         function searchSKUs() {
@@ -157,10 +152,10 @@
 
             skus.forEach((sku, index) => {
                 let type = skuData[sku] || "N/A";
-                let category = type !== "N/A" ? categorizeType(type) : "N/A";
+                let category = type !== "N/A" ? Object.keys(categoryNR).find(key => categoryNR[key] && type.includes(key)) || "Unknown Category" : "N/A";
                 let discount = discounts[index] || 0;
-                let nrValue = discount === 0 ? "0%" : `${categoryNR[category] || 0}%`;
-                let regValue = type !== "N/A" ? (category === "Hardware" ? `${Math.max(discount - 5, 0)}%` : `${Math.max(discount - 3, 0)}%`) : "N/A";
+                let nrValue = calculateNR(category, discount);
+                let regValue = type !== "N/A" ? calculateReg(category, discount) : "N/A";
                 
                 tableBody.innerHTML += `<tr>
                     <td>${index + 1}</td>
@@ -173,9 +168,13 @@
                 </tr>`;
             });
         }
+
+        function copyColumn(columnIndex) {
+            let textToCopy = Array.from(document.querySelectorAll(`#output-table tr td:nth-child(${columnIndex + 1})`))
+                .map(cell => cell.innerText)
+                .join("\n");
+            navigator.clipboard.writeText(textToCopy).then(() => alert("Column copied to clipboard"));
+        }
     </script>
 </body>
 </html>
-
-
-
