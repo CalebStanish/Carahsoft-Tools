@@ -9,11 +9,35 @@
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 50px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        p {
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            flex-wrap: wrap;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
         }
         .button {
-            display: inline-block;
-            padding: 15px 30px;
-            margin: 20px;
+            display: block;
+            padding: 15px;
+            margin: 10px 0;
             font-size: 18px;
             color: white;
             background-color: #007BFF;
@@ -21,9 +45,20 @@
             border-radius: 5px;
             cursor: pointer;
             text-decoration: none;
+            width: 100%;
+            text-align: center;
+            transition: 0.3s;
+            box-sizing: border-box;
         }
         .button:hover {
             background-color: #0056b3;
+        }
+        .description {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 15px;
+            text-align: center;
+            max-width: 250px;
         }
     </style>
 </head>
@@ -31,9 +66,26 @@
     <h1>Welcome to the Tool Directory</h1>
     <p>Select a tool to navigate to its respective files.</p>
     
-    <a href="DD/skutool/dd-sku-tool.html" class="button">DD-Sku-Tool</a>
-    <a href="infoblox/IB-Order-Instruction-Tool.html" class="button">IB-Order-Instruction-Tool</a>
-    <a href="https://chatgpt.com/c/67a24ea9-a294-800e-8cf3-7b0c176fd235" class="button" target="_blank">DD ChatGPT Quote Terms Tool</a>
-    <a href="infoblox/LPPC/indexLPC.html" class="button">List Price Percentage Calculator</a>
+    <div class="container">
+        <!-- DataDog Tools on the Left -->
+        <div class="column">
+            <h2>DataDog Tools</h2>
+            <a href="DD/skutool/dd-sku-tool.html" class="button">DD-Sku-Tool</a>
+            <p class="description">This tool helps you find and manage Datadog SKUs by selecting the appropriate quote type (Annual, Month-to-Month, On-Demand) and entering SKU descriptions. Easily copy the SKUs and their descriptions for further use.</p>
+
+            <a href="https://chatgpt.com/c/67a24ea9-a294-800e-8cf3-7b0c176fd235" class="button" target="_blank">DD ChatGPT Quote Terms Tool</a>
+            <p class="description">This tool allows users to highlight additional services and service allotments, copy them into the chat, and receive them in a standardized format.</p>
+        </div>
+
+        <!-- Infoblox Tools on the Right -->
+        <div class="column">
+            <h2>Infoblox Tools</h2>
+            <a href="infoblox/IB-Order-Instruction-Tool.html" class="button">IB-Order-Instruction-Tool</a>
+            <p class="description">This tool simplifies creating Infoblox order instructions. Select the number of vendor quotes, input the required data, and copy the generated text for your email.</p>
+
+            <a href="infoblox/LPPC/indexLPC.html" class="button">Lapsed Fee Calculator</a>
+            <p class="description">This tool calculates lapsed maintenance fees by inputting a list of prices, quantities, total days, and days past due. The output provides a single lapsed maintenance fee along with a cost per line breakdown.</p>
+        </div>
+    </div>
 </body>
 </html>
