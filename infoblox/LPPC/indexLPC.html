@@ -6,35 +6,106 @@
     <title>SKU Search</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <style>
-        body {
-            display: flex;
-            flex-direction: row;
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        #input-container {
-            width: 40%;
-            padding-right: 20px;
-        }
-        #output-container {
-            width: 60%;
-            border: 1px solid #ccc;
-            padding: 10px;
-            background-color: #f9f9f9;
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+body {
+    display: flex;
+    flex-direction: row;
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+#input-container {
+    width: 40%;
+    padding-right: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    color: #444;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #fff;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #007BFF;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+#output-container {
+    width: 60%;
+    border: 1px solid #ccc;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+}
+
+th {
+    background-color: #007BFF;
+    color: white;
+    text-transform: uppercase;
+}
+
+tbody tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+tbody tr:hover {
+    background: #f1f1f1;
+}
+
+.copy-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: 0.3s;
+}
+
+.copy-btn:hover {
+    background: #218838;
+}
+
     </style>
 </head>
 <body>
