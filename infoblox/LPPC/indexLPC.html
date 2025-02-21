@@ -11,85 +11,37 @@
             flex-direction: row;
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f4f4f4;
         }
         #input-container {
             width: 40%;
-            padding: 20px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding-right: 20px;
         }
         #output-container {
             width: 60%;
-            padding: 20px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            overflow-x: auto;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #333;
-        }
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border-radius: 4px;
             border: 1px solid #ccc;
-            resize: none;
-        }
-        button {
-            display: block;
-            width: 100%;
             padding: 10px;
-            margin-top: 10px;
-            border: none;
-            background: #007bff;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        button:hover {
-            background: #0056b3;
+            background-color: #f9f9f9;
+            overflow-x: auto;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
         th, td {
             border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
+            padding: 8px;
+            text-align: left;
         }
         th {
-            background-color: #007bff;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .copy-btn {
-            padding: 5px;
-            font-size: 14px;
-            border: none;
-            background: #28a745;
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .copy-btn:hover {
-            background: #218838;
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
     <div id="input-container">
         <h1>SKU Search</h1>
-        <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10"></textarea>
-        <textarea id="discounts" placeholder="Enter Discounts (one per line)" rows="10"></textarea>
+        <textarea id="search" placeholder="Enter SKUs (one per line)" rows="10" cols="30"></textarea>
+        <textarea id="discounts" placeholder="Enter Discounts (one per line)" rows="10" cols="10"></textarea>
         <button onclick="searchSKUs()">Search</button>
     </div>
     <div id="output-container">
@@ -102,16 +54,23 @@
                     <th>Type</th>
                     <th>Category</th>
                     <th>Discount %</th>
-                    <th>NR % <button class="copy-btn" onclick="copyColumn(5)">Copy</button></th>
-                    <th>Reg % <button class="copy-btn" onclick="copyColumn(6)">Copy</button></th>
+                    <th>NR % <button onclick="copyColumn(5)">Copy</button></th>
+                    <th>Reg % <button onclick="copyColumn(6)">Copy</button></th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
-    
+
     <script>
         let skuData = {};
+        const categoryMap = {
+            "Subscription Software": ["Subscription", "Partner Subscription", "SaaS (Software as a Service)", "Subscriptions - Data Feed", "Software Perpetual"],
+            "Hardware": ["Hardware"],
+            "Maintenance Services": ["Maintenance Enterprise Direct", "Maintenance Enterprise Partner", "Maintenance ISP Partner", "Maintenance ISP Direct", "Maintenance MSP Direct", "Maintenance (General Category)"],
+            "Professional Services & Training": ["Professional Services & Training"]
+        };
+        
         const categoryNR = {
             "Subscription Software": 11,
             "Hardware": 15,
@@ -126,38 +85,59 @@
                 let workbook = XLSX.read(data, { type: 'array' });
                 let sheet = workbook.Sheets[workbook.SheetNames[0]];
                 let json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
                 json.slice(1).forEach(row => {
                     if (row[0] && row[1]) {
                         skuData[row[0]] = row[1];
                     }
                 });
+                console.log('File loaded successfully!');
             })
             .catch(error => console.error('Error loading the file:', error));
 
+        function categorizeType(type) {
+            for (let category in categoryMap) {
+                if (categoryMap[category].includes(type)) {
+                    return category;
+                }
+            }
+            return "Unknown Category";
+        }
+
         function calculateNR(category, discount) {
-            if (discount === 0) return "0%";
+            if (discount === 0) {
+                return "0%";
+            }
             return `${categoryNR[category] || 0}%`;
         }
 
         function calculateReg(category, discount) {
-            if (discount === 0) return "0%";
-            return category === "Hardware" ? `${Math.max(discount - 5, 0)}%` : `${Math.max(discount - 3, 0)}%`;
+            if (discount === 0) {
+                return "0%";
+            }
+            if (category === "Hardware") {
+                return `${Math.max(discount - 5, 0)}%`;
+            }
+            if (["Subscription Software", "Maintenance Services", "Professional Services & Training"].includes(category)) {
+                return `${Math.max(discount - 3, 0)}%`;
+            }
+            return "0%";
         }
 
         function searchSKUs() {
             let skus = document.getElementById('search').value.trim().split(/\r?\n/).map(s => s.trim());
-            let discounts = document.getElementById('discounts').value.trim().split(/\r?\n/).map(d => parseFloat(d) * 100 || 0);
+            let discounts = document.getElementById('discounts').value.trim().split(/\r?\n/).map(d => (parseFloat(d) * 100).toFixed(0));
             let tableBody = document.querySelector('#output-table tbody');
             tableBody.innerHTML = "";
 
             skus.forEach((sku, index) => {
                 let type = skuData[sku] || "N/A";
-                let category = type !== "N/A" ? Object.keys(categoryNR).find(key => categoryNR[key] && type.includes(key)) || "Unknown Category" : "N/A";
-                let discount = discounts[index] || 0;
+                let category = type !== "N/A" ? categorizeType(type) : "N/A";
+                let discount = parseFloat(discounts[index]) || 0;
                 let nrValue = calculateNR(category, discount);
                 let regValue = type !== "N/A" ? calculateReg(category, discount) : "N/A";
                 
-                tableBody.innerHTML += `<tr>
+                let row = `<tr>
                     <td>${index + 1}</td>
                     <td>${sku}</td>
                     <td>${type}</td>
@@ -166,14 +146,28 @@
                     <td>${nrValue}</td>
                     <td>${regValue}</td>
                 </tr>`;
+                
+                tableBody.innerHTML += row;
             });
         }
 
         function copyColumn(columnIndex) {
-            let textToCopy = Array.from(document.querySelectorAll(`#output-table tr td:nth-child(${columnIndex + 1})`))
-                .map(cell => cell.innerText)
-                .join("\n");
-            navigator.clipboard.writeText(textToCopy).then(() => alert("Column copied to clipboard"));
+            let table = document.getElementById("output-table");
+            let rows = table.getElementsByTagName("tr");
+            let textToCopy = "";
+            
+            for (let i = 1; i < rows.length; i++) {
+                let cells = rows[i].getElementsByTagName("td");
+                if (cells.length > columnIndex) {
+                    textToCopy += cells[columnIndex].innerText + "\n";
+                }
+            }
+            
+            navigator.clipboard.writeText(textToCopy.trim()).then(() => {
+                alert("Column copied to clipboard");
+            }).catch(err => {
+                console.error("Error copying text: ", err);
+            });
         }
     </script>
 </body>
