@@ -155,7 +155,7 @@
       fetch("DATADOG PRICELIST - Calebs Version.xlsx")
         .then(res => res.arrayBuffer())
         .then(data => {
-          const workbook = XLSX.read(data, { type: "array" });
+          const workbook = XLSX.read(new Uint8Array(data), { type: "array" });
 
           const sheetName = source === "Standard"
             ? "Standard Pricing"
@@ -179,16 +179,23 @@
 
           const tbody = document.querySelector("#results-table tbody");
           tbody.innerHTML = "";
-          matches.forEach(row => {
+
+          if (matches.length === 0) {
             const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${row.sku}</td>
-              <td>${row.description}</td>
-              <td>${row.ondemand_price}</td>
-              <td>${row.annual_price}</td>
-            `;
+            tr.innerHTML = `<td colspan="4">No matches found for the provided SKUs.</td>`;
             tbody.appendChild(tr);
-          });
+          } else {
+            matches.forEach(row => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${row.sku}</td>
+                <td>${row.description}</td>
+                <td>${row.ondemand_price}</td>
+                <td>${row.annual_price}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
         })
         .catch(err => {
           alert("Failed to load Excel file");
