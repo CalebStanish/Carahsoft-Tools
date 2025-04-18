@@ -164,38 +164,34 @@
           const sheet = workbook.Sheets[sheetName];
           const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-          const matches = [];
-          for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            if ([11, 12, 13].some(col => skus.includes(String(row[col]).trim()))) {
-              matches.push({
-                sku: row[0],
-                description: `${row[4]}, Annual Rate Reflected`,
-                ondemand_price: i > 0 ? rows[i - 1][5] : "",
-                annual_price: row[6]
-              });
+          const results = skus.map(sku => {
+            for (let i = 1; i < rows.length; i++) {
+              const row = rows[i];
+              if ([11, 12, 13].some(col => String(row[col]).trim() === sku)) {
+                return {
+                  sku: row[0],
+                  description: `${row[4]}, Annual Rate Reflected`,
+                  ondemand_price: i > 0 ? rows[i - 1][5] : "",
+                  annual_price: row[6]
+                };
+              }
             }
-          }
+            return { sku, description: "N/A", ondemand_price: "N/A", annual_price: "N/A" };
+          });
 
           const tbody = document.querySelector("#results-table tbody");
           tbody.innerHTML = "";
 
-          if (matches.length === 0) {
+          results.forEach(row => {
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td colspan="4">No matches found for the provided SKUs.</td>`;
+            tr.innerHTML = `
+              <td>${row.sku}</td>
+              <td>${row.description}</td>
+              <td>${row.ondemand_price}</td>
+              <td>${row.annual_price}</td>
+            `;
             tbody.appendChild(tr);
-          } else {
-            matches.forEach(row => {
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td>${row.sku}</td>
-                <td>${row.description}</td>
-                <td>${row.ondemand_price}</td>
-                <td>${row.annual_price}</td>
-              `;
-              tbody.appendChild(tr);
-            });
-          }
+          });
         })
         .catch(err => {
           alert("Failed to load Excel file");
