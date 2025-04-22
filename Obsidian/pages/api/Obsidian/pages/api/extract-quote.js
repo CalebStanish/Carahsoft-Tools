@@ -1,5 +1,3 @@
-// File: /pages/api/extract-quote.js
-
 import formidable from 'formidable';
 import fs from 'fs';
 import pdf from 'pdf-parse';
@@ -11,9 +9,13 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Missing OpenAI API key' });
+    return res.status(500).json({ error: 'Missing API key' });
   }
 
   const form = new formidable.IncomingForm();
@@ -44,7 +46,8 @@ export default async function handler(req, res) {
           messages: [
             {
               role: 'system',
-              content: 'Extract the Quote Number, Grand Total, and End User/Customer Name from a sales quote document. Return them in an ordered HTML list only, no explanations.',
+              content:
+                'Extract the Quote Number, Grand Total, and End User/Customer Name from a sales quote document. Return them in an ordered HTML list only, no explanations.',
             },
             {
               role: 'user',
