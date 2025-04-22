@@ -1,3 +1,13 @@
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
+
+  // rest of the code...
+}
+
+
+
 import formidable from 'formidable';
 import fs from 'fs';
 import pdf from 'pdf-parse';
