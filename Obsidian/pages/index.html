@@ -53,56 +53,68 @@
     </style>
   </head>
   <body>
-    <div class="card" id="login">
-      <h2>Enter Password</h2>
-      <input type="password" id="password" placeholder="Password" />
-      <button onclick="checkPassword()">Unlock</button>
-    </div>
+  <div class="card" id="login">
+    <h2>Enter Password</h2>
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="checkPassword()">Unlock</button>
+  </div>
 
-    <div class="card hidden" id="protected">
-      <h1>🔒 Project Obsidian</h1>
-      <p>Select a quote PDF to extract key data:</p>
-      <input type="file" id="pdfFile" accept="application/pdf" />
-      <button onclick="uploadPDF()">Extract Info</button>
-      <div class="response" id="responseBox"></div>
-    </div>
+  <div class="card hidden" id="protected">
+    <h1>🔒 Project Obsidian</h1>
+    <p>Select a quote PDF to extract key data:</p>
+    <input type="file" id="pdfFile" accept="application/pdf" />
+    <button onclick="uploadPDF()">Extract Info</button>
+    <div class="response" id="responseBox"></div>
+  </div>
 
-    <script>
-      async function uploadPDF() {
-  const fileInput = document.getElementById("pdfFile");
-  const responseBox = document.getElementById("responseBox");
-  const file = fileInput.files[0];
+  <script>
+    const CORRECT_PASSWORD = "obsidian123";
 
-  if (!file) {
-    alert("Please select a PDF file.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  console.log("Uploading with POST...", formData.get("file"));
-  responseBox.textContent = "Extracting...";
-
-  try {
-    const res = await fetch("/api/extract-quote", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const msg = await res.text();
-      responseBox.innerHTML = `<pre>${res.status} ${msg}</pre>`;
-      return;
+    function checkPassword() {
+      const input = document.getElementById("password").value;
+      if (input === CORRECT_PASSWORD) {
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("protected").classList.remove("hidden");
+      } else {
+        alert("Incorrect password");
+      }
     }
 
-    const data = await res.text();
-    responseBox.innerHTML = data;
-  } catch (err) {
-    responseBox.innerHTML = `<pre>Error: ${err.message}</pre>`;
-  }
-}
-    </script>
-  </body>
+    async function uploadPDF() {
+      const fileInput = document.getElementById("pdfFile");
+      const responseBox = document.getElementById("responseBox");
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert("Please select a PDF file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      responseBox.textContent = "Extracting...";
+
+      try {
+        const res = await fetch("/api/extract-quote", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          responseBox.innerHTML = `<pre>${res.status} ${msg}</pre>`;
+          return;
+        }
+
+        const data = await res.text();
+        responseBox.innerHTML = data;
+      } catch (err) {
+        responseBox.innerHTML = `<pre>Error: ${err.message}</pre>`;
+      }
+    }
+  </script>
+</body>
+
 </html>
 
