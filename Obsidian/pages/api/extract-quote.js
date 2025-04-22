@@ -1,8 +1,3 @@
-
-}
-
-
-
 import formidable from 'formidable';
 import fs from 'fs';
 import pdf from 'pdf-parse';
@@ -15,30 +10,30 @@ export const config = {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end('Method Not Allowed');
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Missing API key' });
+    return res.status(500).json({ error: 'Missing OpenAI API key' });
   }
 
-  const form = new formidable.IncomingForm();
+  const form = new formidable.IncomingForm({ multiples: false });
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
       return res.status(500).json({ error: 'File parsing failed' });
     }
 
-    const file = files.file;
-    if (!file) {
+    const uploaded = files.file?.[0];
+    if (!uploaded) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
     try {
-      const buffer = fs.readFileSync(file[0].filepath);
+      const buffer = fs.readFileSync(uploaded.filepath);
       const data = await pdf(buffer);
-      const text = data.text;
 
       const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -52,21 +47,21 @@ export default async function handler(req, res) {
             {
               role: 'system',
               content:
-                'Extract the Quote Number, Grand Total, and End User/Customer Name from a sales quote document. Return them in an ordered HTML list only, no explanations.',
+                'Extract the Quote Number, Grand Total, and End User/Customer Name from a sales quote PDF. Return them as an ordered HTML list only.',
             },
             {
               role: 'user',
-              content: text,
+              content: data.text,
             },
           ],
         }),
       });
 
-      const result = await openaiRes.json();
-      const content = result.choices?.[0]?.message?.content || '<ol><li>Missing data</li></ol>';
-      res.status(200).send(content);
+      const json = await openaiRes.json();
+      const html = json.choices?.[0]?.message?.content || '<ol><li>Extraction failed</li></ol>';
+      res.status(200).send(html);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to extract or process PDF' });
+      res.status(500).json({ error: 'Error processing PDF or contacting OpenAI.' });
     }
   });
 }
