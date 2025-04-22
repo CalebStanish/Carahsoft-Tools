@@ -1,8 +1,11 @@
+// File: /pages/api/extract-quote.js
+
 import formidable from 'formidable';
 import fs from 'fs';
 import pdf from 'pdf-parse';
 
 export const config = {
+  runtime: 'nodejs',
   api: {
     bodyParser: false,
   },
@@ -65,3 +68,4 @@ export default async function handler(req, res) {
     }
   });
 }
+
