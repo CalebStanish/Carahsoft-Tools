@@ -1,0 +1,12 @@
+{
+  "name": "obsidian-api",
+  "version": "1.0.0",
+  "description": "Azure Function for PDF extraction and OpenAI call",
+  "main": "extract-pdf.js",
+  "type": "module",
+  "dependencies": {
+    "pdf-parse": "^1.1.1",
+    "multiparty": "^4.2.2",
+    "openai": "^4.17.0"
+  }
+}
