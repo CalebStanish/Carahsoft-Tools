@@ -1,37 +1,16 @@
-const pdfParse = require('pdf-parse');
-const { OpenAI } = require('openai');
-const multiparty = require('multiparty');
-const fs = require('fs');
+export default async function (context, req) {
+  context.log("PDF tool received a request.");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+  if (req.method !== "POST") {
+    context.res = {
+      status: 405,
+      body: "Method Not Allowed. Only POST is supported."
+    };
+    return;
+  }
 
-module.exports = async function (context, req) {
-  return new Promise((resolve, reject) => {
-    const form = new multiparty.Form();
-
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        context.res = { status: 400, body: "Invalid form data" };
-        return resolve();
-      }
-
-      const filePath = files.file[0].path;
-      const fileBuffer = fs.readFileSync(filePath);
-      const text = await pdfParse(fileBuffer).then(res => res.text);
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: `Analyze this PDF content:\n${text}` }],
-      });
-
-      context.res = {
-        status: 200,
-        body: response.choices[0].message.content,
-      };
-
-      return resolve();
-    });
-  });
-};
+  context.res = {
+    status: 200,
+    body: "Success! Your POST request was received by the Azure Function."
+  };
+}
