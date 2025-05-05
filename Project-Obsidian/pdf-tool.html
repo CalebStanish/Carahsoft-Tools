@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDF Upload Tool</title>
+</head>
+<body>
+  <h1>Upload a PDF</h1>
+  <input type="file" id="pdfInput" accept="application/pdf" />
+  <button onclick="uploadPDF()">Upload</button>
+
+  <h2>Results:</h2>
+  <pre id="output"></pre>
+
+  <script>
+    async function uploadPDF() {
+      const input = document.getElementById('pdfInput');
+      if (!input.files.length) return alert("Please select a PDF.");
+
+      const formData = new FormData();
+      formData.append("file", input.files[0]);
+
+      const res = await fetch("/api/extract-pdf", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await res.text();
+      document.getElementById("output").textContent = result;
+    }
+  </script>
+</body>
+</html>
