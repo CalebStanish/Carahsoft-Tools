@@ -30,19 +30,20 @@
 </head>
 <body>
   <div class="card">
-    <h1>Datadog Price Lookup <span class="pill">Sheet 2 • Exact Match</span></h1>
+    <h1>Datadog Price Lookup <span class="pill">Exact Match</span></h1>
     <p class="muted">
       Paste a column of product names from Excel (one per line). Choose a search mode below.<br/>
-      <b>Price – Annual:</b> search Column <b>B</b>, then <b>J</b>. &nbsp;|&nbsp;
-      <b>Government Price – Annual:</b> search Column <b>C</b>, then <b>J</b>.
+      <b>Price – Annual:</b> Sheet #2, search Column <b>B</b>, then <b>J</b>. &nbsp;|&nbsp;
+      <b>Government Price – Annual:</b> Sheet “Government Price - Annual” (Sheet #6), search Column <b>C</b>, then <b>J</b>.
     </p>
 
     <div class="row">
       <label for="mode">Search mode:</label>
       <select id="mode">
-        <option value="commercial">Price – Annual (B → J)</option>
-        <option value="government">Government Price – Annual (C → J)</option>
+        <option value="commercial">Price – Annual (Sheet #2, B → J)</option>
+        <option value="government">Government Price – Annual (Sheet #6, C → J)</option>
       </select>
+      <div id="sheetStatus" class="status"></div>
     </div>
 
     <textarea id="names" placeholder="Paste product names here — one per line"></textarea>
@@ -55,13 +56,18 @@
     <div id="notfound"></div>
 
     <div class="small">
-      This page must sit next to <code>DatadogPricelist2.1.xlsx</code> and be served over HTTP (e.g., Live Server).
+      Place this file next to <code>DatadogPricelist2.1.xlsx</code> and serve via a local server (e.g., VS Code Live Server).
     </div>
   </div>
 
   <script>
     const EXCEL_FILE = 'DatadogPricelist2.1.xlsx';
-    let rows = [];
+
+    // Parsed data per sheet/mode
+    let rowsCommercial = []; // sheet #2: A,B,D,E,J
+    let rowsGovernment = []; // sheet "Government Price - Annual" (or #6): A,C,D,E,J
+
+    // For copy buttons
     let lastResults = [];
 
     const fmtUSD = n => {
@@ -81,6 +87,35 @@
         .toLowerCase();
     }
 
+    function parseSheet(ws, which) {
+      // which = 'commercial' or 'government'
+      const out = [];
+      const ref = ws['!ref'];
+      if (!ref) return out;
+      const range = XLSX.utils.decode_range(ref);
+
+      for (let r = range.s.r + 1; r <= range.e.r; r++) { // skip header
+        const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
+        const A = cell(0); // SKU
+        const B = cell(1); // Commercial name
+        const C = cell(2); // Government name
+        const D = cell(3); // Price
+        const E = cell(4); // Annual Price
+        const J = cell(9); // Alt name
+        if (A === '' && B === '' && C === '' && D === '' && E === '' && J === '') continue;
+
+        out.push({
+          sku: String(A).trim(),
+          nameB: String(B).trim(),
+          nameC: String(C).trim(),
+          priceD: D,
+          priceE: E,
+          nameJ: String(J).trim()
+        });
+      }
+      return out;
+    }
+
     (async function loadWorkbook() {
       try {
         const res = await fetch(EXCEL_FILE);
@@ -88,32 +123,25 @@
         const ab = await res.arrayBuffer();
         const wb = XLSX.read(ab, { type: 'array' });
 
-        const sheetName = wb.SheetNames[1]; // Sheet #2
-        const ws = wb.Sheets[sheetName];
-        if (!ws) throw new Error('Sheet #2 not found');
+        // Sheet #2 (index 1) for commercial
+        const sheetName2 = wb.SheetNames[1];
+        const ws2 = wb.Sheets[sheetName2];
+        if (!ws2) throw new Error('Sheet #2 not found');
+        rowsCommercial = parseSheet(ws2, 'commercial');
 
-        const ref = ws['!ref'];
-        const range = XLSX.utils.decode_range(ref);
-        for (let r = range.s.r + 1; r <= range.e.r; r++) {
-          const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
-          const A = cell(0); // SKU
-          const B = cell(1); // Product Name (Commercial)
-          const C = cell(2); // Product Name (Government)
-          const D = cell(3); // Price
-          const E = cell(4); // Annual Price
-          const J = cell(9); // Alt Name
-          if (A === '' && B === '' && C === '' && J === '' && E === '' && D === '') continue;
-          rows.push({
-            sku: String(A).trim(),
-            nameB: String(B).trim(),
-            nameC: String(C).trim(),
-            priceD: D,
-            priceE: E,
-            nameJ: String(J).trim()
-          });
+        // Government: try by name first, else fallback to index 5
+        const govByName = wb.Sheets['Government Price - Annual'];
+        const wsGov = govByName || wb.Sheets[wb.SheetNames[5]];
+        if (!wsGov) {
+          document.getElementById('sheetStatus').textContent =
+            'Government sheet not found (expected "Government Price - Annual" or sheet #6). Commercial mode will still work.';
+        } else {
+          rowsGovernment = parseSheet(wsGov, 'government');
+          document.getElementById('sheetStatus').textContent =
+            `Loaded: Commercial rows ${rowsCommercial.length} • Government rows ${rowsGovernment.length}`;
         }
 
-        document.getElementById('status').textContent = `Workbook loaded (${rows.length} rows from "${sheetName}").`;
+        document.getElementById('status').textContent = 'Workbook loaded.';
         document.getElementById('searchBtn').disabled = false;
       } catch (err) {
         document.getElementById('status').textContent = `Failed to load workbook: ${err.message}`;
@@ -121,24 +149,26 @@
       }
     })();
 
-    // Exact match for one name, based on selected mode
+    // Exact match for one name by mode:
+    // - commercial: B → J
+    // - government: C → J
     function exactMatchOne(name, mode) {
       const q = normalize(name);
       if (!q) return null;
 
+      const rows = mode === 'government' ? rowsGovernment : rowsCommercial;
+
       if (mode === 'government') {
-        // Government: search C first, then J
-        const matchC = rows.find(r => normalize(r.nameC) === q);
-        if (matchC) return { ...matchC, matchedName: matchC.nameC || matchC.nameJ };
-        const matchJg = rows.find(r => normalize(r.nameJ) === q);
-        if (matchJg) return { ...matchJg, matchedName: matchJg.nameC || matchJg.nameJ };
+        const mC = rows.find(r => normalize(r.nameC) === q);
+        if (mC) return { ...mC, matchedName: mC.nameC || mC.nameJ };
+        const mJ = rows.find(r => normalize(r.nameJ) === q);
+        if (mJ) return { ...mJ, matchedName: mJ.nameC || mJ.nameJ };
         return null;
       } else {
-        // Commercial (Price – Annual): search B first, then J
-        const matchB = rows.find(r => normalize(r.nameB) === q);
-        if (matchB) return { ...matchB, matchedName: matchB.nameB || matchB.nameJ };
-        const matchJ = rows.find(r => normalize(r.nameJ) === q);
-        if (matchJ) return { ...matchJ, matchedName: matchJ.nameB || matchJ.nameJ };
+        const mB = rows.find(r => normalize(r.nameB) === q);
+        if (mB) return { ...mB, matchedName: mB.nameB || mB.nameJ };
+        const mJ = rows.find(r => normalize(r.nameJ) === q);
+        if (mJ) return { ...mJ, matchedName: mJ.nameB || mJ.nameJ };
         return null;
       }
     }
@@ -150,6 +180,7 @@
     }
 
     function copyColumn(field) {
+      if (!lastResults.length) return;
       const text = lastResults.map(r => r[field]).join('\n');
       navigator.clipboard.writeText(text).then(() => {
         alert(`${field.toUpperCase()} column copied to clipboard!`);
@@ -163,7 +194,7 @@
 
       const lines = inputText
         .split(/\r?\n/)
-        .map(l => String(l).split(/\t/)[0])
+        .map(l => String(l).split(/\t/)[0]) // if whole rows pasted, take first cell per line
         .map(l => l.trim())
         .filter(l => l.length > 0);
 
@@ -246,4 +277,3 @@
   </script>
 </body>
 </html>
-
