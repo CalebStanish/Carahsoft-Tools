@@ -11,39 +11,33 @@
     .card { margin:auto; width:min(1100px, 94vw); background:#111a2b; padding:28px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
     h1 { margin:0 0 8px; font-size:1.4rem; }
     .muted { color:#9bb0c5; margin:0 0 18px; }
-    .row { display:flex; gap:12px; margin: 12px 0 18px; align-items:center; flex-wrap:wrap; }
+    .row { display:flex; gap:12px; margin: 12px 0 18px; align-items:center; }
     textarea { width:100%; min-height:160px; padding:12px 14px; border-radius:12px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; resize:vertical; }
-    select { padding:10px 12px; border-radius:10px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; }
-    button { padding:8px 14px; border:0; border-radius:8px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; font-size:0.85rem; }
-    button.small-btn { padding:6px 10px; font-size:0.75rem; background:#5f9fff; margin-top:4px; }
+    button { padding:12px 16px; border:0; border-radius:10px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; }
     button:disabled{opacity:.5; cursor:not-allowed;}
     .status { font-size:.95rem; color:#9bb0c5; margin:6px 0 12px; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
     th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #223251; }
-    th { color:#9bb0c5; font-weight:600; vertical-align:bottom; }
+    th { color:#9bb0c5; font-weight:600; }
     .small { font-size:.9rem; color:#9bb0c5; margin-top:10px; }
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2742; color:#cfe0ff; font-size:.8rem; margin-left:6px;}
     .notfound { margin-top:14px; padding:12px; background:#1a243e; border-radius:10px; }
     code { background:#0d1626; padding:2px 6px; border-radius:6px; }
-    label { color:#9bb0c5; font-size:0.95rem; }
+    .mode-select { margin-bottom: 12px; }
+    .mode-select button { background:#222f47; border:none; padding:8px 14px; margin-right:8px; border-radius:8px; cursor:pointer; color:#eef2f7; }
+    .mode-select button.active { background:#3a86ff; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Datadog Price Lookup <span class="pill">Exact Match</span></h1>
+    <h1>Datadog Price Lookup</h1>
     <p class="muted">
-      Paste a column of product names from Excel (one per line). Choose a search mode below.<br/>
-      <b>Price – Annual:</b> Sheet #2, search Column <b>B</b>, then <b>J</b>. &nbsp;|&nbsp;
-      <b>Government Price – Annual:</b> Sheet “Government Price - Annual” (Sheet #6), search Column <b>C</b>, then <b>J</b>.
+      Paste a column of product names from Excel (one per line). Choose a search mode below.
     </p>
 
-    <div class="row">
-      <label for="mode">Search mode:</label>
-      <select id="mode">
-        <option value="commercial">Price – Annual (Sheet #2, B → J)</option>
-        <option value="government">Government Price – Annual (Sheet #6, C → J)</option>
-      </select>
-      <div id="sheetStatus" class="status"></div>
+    <div class="mode-select">
+      <button id="modeCommercial" class="active">Price – Annual</button>
+      <button id="modeGovernment">Government Price – Annual</button>
     </div>
 
     <textarea id="names" placeholder="Paste product names here — one per line"></textarea>
@@ -55,20 +49,14 @@
     <div id="results"></div>
     <div id="notfound"></div>
 
-    <div class="small">
-      Place this file next to <code>DatadogPricelist2.1.xlsx</code> and serve via a local server (e.g., VS Code Live Server).
-    </div>
+    <div class="small" id="loadedInfo"></div>
   </div>
 
   <script>
-    const EXCEL_FILE = 'DatadogPricelist2.1.xlsx';
-
-    // Parsed data per sheet/mode
-    let rowsCommercial = []; // sheet #2: A,B,D,E,J
-    let rowsGovernment = []; // sheet "Government Price - Annual" (or #6): A,C,D,E,J
-
-    // For copy buttons
-    let lastResults = [];
+    const EXCEL_FILE = 'DatadogPricelist2.1.xlsx'; 
+    let commercialRows = [];
+    let governmentRows = [];
+    let currentMode = 'commercial';
 
     const fmtUSD = n => {
       if (n === null || n === undefined || n === '') return '';
@@ -87,35 +75,6 @@
         .toLowerCase();
     }
 
-    function parseSheet(ws, which) {
-      // which = 'commercial' or 'government'
-      const out = [];
-      const ref = ws['!ref'];
-      if (!ref) return out;
-      const range = XLSX.utils.decode_range(ref);
-
-      for (let r = range.s.r + 1; r <= range.e.r; r++) { // skip header
-        const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
-        const A = cell(0); // SKU
-        const B = cell(1); // Commercial name
-        const C = cell(2); // Government name
-        const D = cell(3); // Price
-        const E = cell(4); // Annual Price
-        const J = cell(9); // Alt name
-        if (A === '' && B === '' && C === '' && D === '' && E === '' && J === '') continue;
-
-        out.push({
-          sku: String(A).trim(),
-          nameB: String(B).trim(),
-          nameC: String(C).trim(),
-          priceD: D,
-          priceE: E,
-          nameJ: String(J).trim()
-        });
-      }
-      return out;
-    }
-
     (async function loadWorkbook() {
       try {
         const res = await fetch(EXCEL_FILE);
@@ -123,25 +82,16 @@
         const ab = await res.arrayBuffer();
         const wb = XLSX.read(ab, { type: 'array' });
 
-        // Sheet #2 (index 1) for commercial
-        const sheetName2 = wb.SheetNames[1];
-        const ws2 = wb.Sheets[sheetName2];
-        if (!ws2) throw new Error('Sheet #2 not found');
-        rowsCommercial = parseSheet(ws2, 'commercial');
+        // Commercial: sheet #2
+        const wsCommercial = wb.Sheets[wb.SheetNames[1]];
+        parseSheet(wsCommercial, commercialRows, 0, 1, 4, 9); 
 
-        // Government: try by name first, else fallback to index 5
-        const govByName = wb.Sheets['Government Price - Annual'];
-        const wsGov = govByName || wb.Sheets[wb.SheetNames[5]];
-        if (!wsGov) {
-          document.getElementById('sheetStatus').textContent =
-            'Government sheet not found (expected "Government Price - Annual" or sheet #6). Commercial mode will still work.';
-        } else {
-          rowsGovernment = parseSheet(wsGov, 'government');
-          document.getElementById('sheetStatus').textContent =
-            `Loaded: Commercial rows ${rowsCommercial.length} • Government rows ${rowsGovernment.length}`;
-        }
+        // Government: sheet #6
+        const wsGovernment = wb.Sheets[wb.SheetNames[5]];
+        parseSheet(wsGovernment, governmentRows, 0, 2, 6, 9); 
 
-        document.getElementById('status').textContent = 'Workbook loaded.';
+        document.getElementById('status').textContent = 'Ready.';
+        document.getElementById('loadedInfo').textContent = `Loaded: ${commercialRows.length} Commercial • ${governmentRows.length} Government`;
         document.getElementById('searchBtn').disabled = false;
       } catch (err) {
         document.getElementById('status').textContent = `Failed to load workbook: ${err.message}`;
@@ -149,28 +99,32 @@
       }
     })();
 
-    // Exact match for one name by mode:
-    // - commercial: B → J
-    // - government: C → J
+    function parseSheet(ws, targetArr, skuCol, nameColB, priceCol, nameColJ) {
+      const ref = ws['!ref'];
+      const range = XLSX.utils.decode_range(ref);
+      for (let r = range.s.r + 1; r <= range.e.r; r++) {
+        const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
+        const A = cell(skuCol);
+        const B = cell(nameColB);
+        const E = cell(priceCol);
+        const J = cell(nameColJ);
+        if (A === '' && B === '' && J === '' && E === '') continue;
+        targetArr.push({ sku: String(A).trim(), nameB: String(B).trim(), priceE: E, nameJ: String(J).trim() });
+      }
+    }
+
     function exactMatchOne(name, mode) {
       const q = normalize(name);
       if (!q) return null;
+      const arr = mode === 'commercial' ? commercialRows : governmentRows;
 
-      const rows = mode === 'government' ? rowsGovernment : rowsCommercial;
+      const matchB = arr.find(r => normalize(r.nameB) === q);
+      if (matchB) return matchB;
 
-      if (mode === 'government') {
-        const mC = rows.find(r => normalize(r.nameC) === q);
-        if (mC) return { ...mC, matchedName: mC.nameC || mC.nameJ };
-        const mJ = rows.find(r => normalize(r.nameJ) === q);
-        if (mJ) return { ...mJ, matchedName: mJ.nameC || mJ.nameJ };
-        return null;
-      } else {
-        const mB = rows.find(r => normalize(r.nameB) === q);
-        if (mB) return { ...mB, matchedName: mB.nameB || mB.nameJ };
-        const mJ = rows.find(r => normalize(r.nameJ) === q);
-        if (mJ) return { ...mJ, matchedName: mJ.nameB || mJ.nameJ };
-        return null;
-      }
+      const matchJ = arr.find(r => normalize(r.nameJ) === q);
+      if (matchJ) return matchJ;
+
+      return null;
     }
 
     function escapeHtml(s) {
@@ -179,22 +133,13 @@
       }[m]));
     }
 
-    function copyColumn(field) {
-      if (!lastResults.length) return;
-      const text = lastResults.map(r => r[field]).join('\n');
-      navigator.clipboard.writeText(text).then(() => {
-        alert(`${field.toUpperCase()} column copied to clipboard!`);
-      });
-    }
-
-    function renderBatch(inputText) {
+    function renderBatch(inputText, mode) {
       const resultsWrap = document.getElementById('results');
       const notFoundWrap = document.getElementById('notfound');
-      const mode = document.getElementById('mode').value;
 
       const lines = inputText
         .split(/\r?\n/)
-        .map(l => String(l).split(/\t/)[0]) // if whole rows pasted, take first cell per line
+        .map(l => String(l).split(/\t/)[0])
         .map(l => l.trim())
         .filter(l => l.length > 0);
 
@@ -206,17 +151,14 @@
         if (hit) {
           rowsOut.push({
             input: name,
-            matched: hit.matchedName,
+            matched: hit.nameB || hit.nameJ,
             sku: hit.sku,
-            price: hit.priceD,
-            annual: fmtUSD(hit.priceE)
+            price: hit.priceE
           });
         } else {
           misses.push(name);
         }
       }
-
-      lastResults = rowsOut;
 
       if (rowsOut.length) {
         resultsWrap.innerHTML = `
@@ -225,15 +167,8 @@
               <tr>
                 <th>Input Name</th>
                 <th>Matched Name</th>
-                <th>
-                  SKU (A)<br>
-                  <button class="small-btn" onclick="copyColumn('sku')">Copy SKU</button>
-                </th>
-                <th>Price (D)</th>
-                <th>
-                  Annual Price (E)<br>
-                  <button class="small-btn" onclick="copyColumn('annual')">Copy Annual</button>
-                </th>
+                <th>SKU</th>
+                <th>Annual Price</th>
               </tr>
             </thead>
             <tbody>
@@ -243,7 +178,6 @@
                   <td>${escapeHtml(r.matched)}</td>
                   <td>${escapeHtml(r.sku)}</td>
                   <td>${fmtUSD(r.price)}</td>
-                  <td>${escapeHtml(r.annual)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -263,17 +197,27 @@
       }
     }
 
+    document.getElementById('modeCommercial').addEventListener('click', function() {
+      currentMode = 'commercial';
+      this.classList.add('active');
+      document.getElementById('modeGovernment').classList.remove('active');
+    });
+
+    document.getElementById('modeGovernment').addEventListener('click', function() {
+      currentMode = 'government';
+      this.classList.add('active');
+      document.getElementById('modeCommercial').classList.remove('active');
+    });
+
     const btn = document.getElementById('searchBtn');
     const ta = document.getElementById('names');
-    btn.addEventListener('click', () => renderBatch(ta.value));
+    btn.addEventListener('click', () => renderBatch(ta.value, currentMode));
     ta.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'enter' && !btn.disabled) {
         e.preventDefault();
-        renderBatch(ta.value);
+        renderBatch(ta.value, currentMode);
       }
     });
-
-    window.copyColumn = copyColumn; // expose to HTML
   </script>
 </body>
 </html>
