@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datadogs Qt Tool 2.1</title>
+  <!-- SheetJS (xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: #121923;
+      --muted: #8aa0b6;
+      --text: #e6edf3;
+      --accent: #4ea1ff;
+      --danger: #ff5d7a;
+      --border: #223040;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+    .title { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 24px; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+    .col-12 { grid-column: span 12; }
+    .col-6 { grid-column: span 6; }
+    .control { display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 0.9rem; color: var(--muted); }
+    input[type="text"], select, button {
+      background: #0d1420; border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; outline: none;
+    }
+    button { cursor: pointer; transition: transform .05s ease, background .2s ease; }
+    button:hover { transform: translateY(-1px); }
+    .btn-primary { background: #0f2236; border-color: #1d3750; }
+    .btn-accent { background: #0e2a4a; border-color: #1b4b7d; }
+    .btn-danger { background: #2b0e19; border-color: #5e1e36; }
+
+    .table-wrap { margin-top: 18px; overflow: auto; border: 1px solid var(--border); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 0.95rem; }
+    th { position: sticky; top: 0; background: #0d1420; z-index: 1; }
+    .muted { color: var(--muted); }
+    .row-actions { display: flex; gap: 8px; }
+    .pill { font-size: 0.8rem; color: var(--text); border: 1px dashed var(--border); padding: 6px 8px; border-radius: 999px; }
+    .footer { margin-top: 18px; color: var(--muted); font-size: 0.9rem; }
+    .hint { font-size: 0.85rem; color: var(--muted); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; background: #0e2a4a; border: 1px solid #1b4b7d; margin-left: 8px; font-size: 0.8rem; }
+    .toast { position: fixed; bottom: 16px; right: 16px; background: #0d1420; color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">Datadogs Qt Tool 2.1 <span class="badge">GitHub Fetch</span></div>
+    <div class="subtitle">Lookup pricing from your Excel price lists. <span class="muted">(Carahsoft SKU = Column A)</span></div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="col-6 control">
+          <label for="mode">Select Price List</label>
+          <select id="mode">
+            <option value="price-annual">Price Annual</option>
+            <option value="gov-annual">Government Price Annual</option>
+          </select>
+        </div>
+        <div class="col-6 control">
+          <label for="query">Search term</label>
+          <input id="query" type="text" placeholder="Enter product name / code" />
+        </div>
+
+        <div class="col-12" style="display:flex; gap: 10px; align-items:center;">
+          <button id="run" class="btn-accent">Search</button>
+          <button id="clear" class="btn-danger">Clear</button>
+          <span class="pill" id="status">Loading workbook…</span>
+        </div>
+
+        <div class="col-12 table-wrap" id="tableWrap" style="display:none;">
+          <table id="results">
+            <thead>
+              <tr>
+                <th>Carahsoft SKU (A)</th>
+                <th>Price (D)</th>
+                <th>Annual Price (E)</th>
+                <th>Matched In</th>
+                <th>Row</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="col-12 footer">
+          Primary/secondary search columns by mode:
+          <ul>
+            <li><strong>Price Annual</strong>: search <code>B</code> then <code>J</code> → output <code>A</code>, <code>D</code>, <code>E</code> from tab <em>Annual</em> (or page 2 fallback).</li>
+            <li><strong>Government Price Annual</strong>: search <code>C</code> then <code>J</code> → output <code>A</code>, <code>D</code>, <code>E</code> from tab <em>Government Price Annual</em> (or page 6 fallback).</li>
+          </ul>
+          <div class="hint">This page auto-loads <code>Datadog Pricelist v17 - UPDATED-.xlsx</code> from the same folder. If it fails, confirm the exact filename and that GitHub Pages is serving this file in the same directory.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Utility: column letter -> zero-based index
+    const colIndex = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7, I: 8, J: 9, K: 10 };
+
+    let workbook = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function showToast(msg){
+      const t = $("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> t.style.display = "none", 2200);
+    }
+
+    function setStatus(text){ $("status").textContent = text; }
+
+    // Auto-load workbook from GitHub repo (same folder)
+    async function loadWorkbook(){
+      try{
+        // URL-encode spaces in the filename for GitHub Pages
+        const response = await fetch("Datadog%20Pricelist%20v17%20-%20UPDATED-.xlsx");
+        if(!response.ok) throw new Error(`HTTP ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        workbook = XLSX.read(arrayBuffer, { type: "array" });
+        setStatus(`Workbook loaded from repo • Sheets: ${workbook.SheetNames.length}`);
+        showToast("Workbook loaded from repo");
+      } catch (error){
+        console.error("Error loading Excel file:", error);
+        setStatus("Failed to load workbook from repo");
+        showToast("Failed to load workbook");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadWorkbook);
+
+    function pickSheet(mode){
+      if(!workbook) return null;
+      const names = workbook.SheetNames;
+
+      if(mode === 'price-annual'){
+        const preferred = names.find(n => n.trim().toLowerCase() === 'annual');
+        if(preferred) return preferred;
+        return names[1] || names[0];
+      } else {
+        const targetName = names.find(n => n.trim().toLowerCase() === 'government price annual');
+        if(targetName) return targetName;
+        return names[5] || names[names.length-1];
+      }
+    }
+
+    function sheetToMatrix(sheet){
+      return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
+    }
+
+    function searchRows(matrix, primaryColIdx, secondaryColIdx, term){
+      const results = [];
+      const q = (term || '').toString().trim().toLowerCase();
+      if(!q) return results;
+
+      for(let r=0; r<matrix.length; r++){
+        const row = matrix[r];
+        const v = (row[primaryColIdx] || '').toString().toLowerCase();
+        if(v && v.includes(q)){
+          results.push({ rowIndex:r, row, matchedIn:'Primary' });
+        }
+      }
+      if(results.length) return results;
+
+      for(let r=0; r<matrix.length; r++){
+        const row = matrix[r];
+        const v = (row[secondaryColIdx] || '').toString().toLowerCase();
+        if(v && v.includes(q)){
+          results.push({ rowIndex:r, row, matchedIn:'Secondary' });
+        }
+      }
+      return results;
+    }
+
+    function renderResults(rows){
+      const wrap = $("tableWrap");
+      const tbody = $("results").querySelector('tbody');
+      tbody.innerHTML = '';
+
+      if(!rows || !rows.length){
+        wrap.style.display = 'block';
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.innerHTML = '<span class="muted">Not Available</span>';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      for(const item of rows){
+        const { rowIndex, row, matchedIn } = item;
+        const sku = row[colIndex.A] ?? '';
+        const price = row[colIndex.D] ?? '';
+        const annual = row[colIndex.E] ?? '';
+
+        const tr = document.createElement('tr');
+        const tdSku = document.createElement('td'); tdSku.textContent = sku;
+        const tdPrice = document.createElement('td'); tdPrice.textContent = price;
+        const tdAnnual = document.createElement('td'); tdAnnual.textContent = annual;
+        const tdMatched = document.createElement('td'); tdMatched.textContent = matchedIn;
+        const tdRow = document.createElement('td'); tdRow.textContent = rowIndex + 1; // 1-based for user
+        const tdActions = document.createElement('td');
+
+        const btnCopy = document.createElement('button');
+        btnCopy.className = 'btn-primary';
+        btnCopy.textContent = 'Copy Row';
+        btnCopy.addEventListener('click', async () => {
+          const text = [sku, price, annual].join('\t');
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast('Row copied to clipboard');
+          } catch(e){
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+            showToast('Row copied (fallback)');
+          }
+        });
+
+        tdActions.appendChild(btnCopy);
+        tdActions.className = 'row-actions';
+
+        tr.appendChild(tdSku);
+        tr.appendChild(tdPrice);
+        tr.appendChild(tdAnnual);
+        tr.appendChild(tdMatched);
+        tr.appendChild(tdRow);
+        tr.appendChild(tdActions);
+
+        tbody.appendChild(tr);
+      }
+
+      $("tableWrap").style.display = 'block';
+    }
+
+    $("run").addEventListener('click', () => {
+      if(!workbook){ showToast('Workbook not loaded yet.'); return; }
+
+      const mode = $("mode").value;
+      const term = $("query").value;
+
+      const sheetName = pickSheet(mode);
+      if(!sheetName){ showToast('Could not select a sheet for this mode.'); return; }
+
+      const sheet = workbook.Sheets[sheetName];
+      const matrix = sheetToMatrix(sheet);
+
+      let primary, secondary;
+      if(mode === 'price-annual'){
+        primary = colIndex.B; // search B then J
+        secondary = colIndex.J;
+      } else {
+        primary = colIndex.C; // search C then J
+        secondary = colIndex.J;
+      }
+
+      const matches = searchRows(matrix, primary, secondary, term);
+      renderResults(matches);
+      setStatus(`Mode: ${mode === 'price-annual' ? 'Price Annual' : 'Government Price Annual'} • Sheet: ${sheetName} • Matches: ${matches.length}`);
+    });
+
+    $("clear").addEventListener('click', () => {
+      $("query").value = '';
+      $("results").querySelector('tbody').innerHTML = '';
+      $("tableWrap").style.display = 'none';
+    });
+  </script>
+</body>
+</html>
