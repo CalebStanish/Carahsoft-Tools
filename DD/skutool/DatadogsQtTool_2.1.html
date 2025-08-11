@@ -51,7 +51,6 @@
     const EXCEL_FILE = 'DatadogPricelist2.1.xlsx'; // same folder
     let rows = []; // parsed rows from sheet #2
 
-    // Format as USD if it's a number or number-like string
     const fmtUSD = n => {
       if (n === null || n === undefined || n === '') return '';
       const num = typeof n === 'number' ? n :
@@ -62,7 +61,6 @@
       return n;
     };
 
-    // Normalize strings for comparison: trim and collapse internal whitespace
     function normalize(s) {
       return String(s ?? '')
         .trim()
@@ -70,7 +68,6 @@
         .toLowerCase();
     }
 
-    // Load workbook on start
     (async function loadWorkbook() {
       try {
         const res = await fetch(EXCEL_FILE);
@@ -78,15 +75,13 @@
         const ab = await res.arrayBuffer();
         const wb = XLSX.read(ab, { type: 'array' });
 
-        // Grab sheet #2 (index 1)
         const sheetName = wb.SheetNames[1];
         const ws = wb.Sheets[sheetName];
         if (!ws) throw new Error('Sheet #2 not found');
 
-        // Build row objects using A, B, E, J
         const ref = ws['!ref'];
         const range = XLSX.utils.decode_range(ref);
-        for (let r = range.s.r + 1; r <= range.e.r; r++) { // +1 assuming first row is header
+        for (let r = range.s.r + 1; r <= range.e.r; r++) {
           const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
           const A = cell(0); // SKU
           const B = cell(1); // Product Name (primary)
@@ -104,16 +99,15 @@
       }
     })();
 
-    // Exact match for a single name: B first, then J
     function exactMatchOne(name) {
       const q = normalize(name);
       if (!q) return null;
 
       const matchB = rows.find(r => normalize(r.nameB) === q);
-      if (matchB) return { ...matchB, matchedFrom: 'B' };
+      if (matchB) return matchB;
 
       const matchJ = rows.find(r => normalize(r.nameJ) === q);
-      if (matchJ) return { ...matchJ, matchedFrom: 'J' };
+      if (matchJ) return matchJ;
 
       return null;
     }
@@ -128,10 +122,9 @@
       const resultsWrap = document.getElementById('results');
       const notFoundWrap = document.getElementById('notfound');
 
-      // Split lines (handles Excel paste, including tabs—take first cell per line)
       const lines = inputText
         .split(/\r?\n/)
-        .map(l => String(l).split(/\t/)[0]) // if they pasted entire rows, take first column cell
+        .map(l => String(l).split(/\t/)[0])
         .map(l => l.trim())
         .filter(l => l.length > 0);
 
@@ -145,8 +138,7 @@
             input: name,
             matched: hit.nameB || hit.nameJ,
             sku: hit.sku,
-            price: hit.priceE,
-            src: hit.matchedFrom
+            price: hit.priceE
           });
         } else {
           misses.push(name);
@@ -154,7 +146,7 @@
       }
 
       if (rowsOut.length) {
-        const html = `
+        resultsWrap.innerHTML = `
           <table>
             <thead>
               <tr>
@@ -162,7 +154,6 @@
                 <th>Matched Name</th>
                 <th>SKU (A)</th>
                 <th>Annual Price (E)</th>
-                <th>Source</th>
               </tr>
             </thead>
             <tbody>
@@ -172,12 +163,10 @@
                   <td>${escapeHtml(r.matched)}</td>
                   <td>${escapeHtml(r.sku)}</td>
                   <td>${fmtUSD(r.price)}</td>
-                  <td>Col ${r.src}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>`;
-        resultsWrap.innerHTML = html;
       } else {
         resultsWrap.innerHTML = `<p>No matches found.</p>`;
       }
@@ -193,7 +182,6 @@
       }
     }
 
-    // Wire up UI
     const btn = document.getElementById('searchBtn');
     const ta = document.getElementById('names');
     btn.addEventListener('click', () => renderBatch(ta.value));
@@ -206,5 +194,4 @@
   </script>
 </body>
 </html>
-
 
