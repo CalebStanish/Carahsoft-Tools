@@ -1,154 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Datadog SKU Lookup</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background:#0b1220; color:#eef2f7; display:flex; min-height:100vh; }
-    .card { margin:auto; width:min(900px, 92vw); background:#111a2b; padding:28px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
-    h1 { margin:0 0 8px; font-size:1.4rem; }
-    .muted { color:#9bb0c5; margin:0 0 18px; }
-    .row { display:flex; gap:10px; margin: 12px 0 18px; }
-    input { flex:1; padding:12px 14px; border-radius:10px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; }
-    button { padding:12px 16px; border:0; border-radius:10px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; }
-    button:disabled{opacity:.5; cursor:not-allowed;}
-    .status { font-size:.95rem; color:#9bb0c5; margin:6px 0 12px; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #223251; }
-    th { color:#9bb0c5; font-weight:600; }
-    .small { font-size:.9rem; color:#9bb0c5; margin-top:10px; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2742; color:#cfe0ff; font-size:.8rem; margin-left:6px;}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Datadog Price – Annual Lookup <span class="pill">Sheet 2</span></h1>
-    <p class="muted">Type a product name (we’ll search Column <b>B</b> first, then Column <b>J</b>). Returns SKU (A) and Annual Price (E).</p>
+<script>
+  // Exact match search: Column B first, then Column J
+  function exactMatchSearch(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
 
-    <div class="row">
-      <input id="query" type="text" placeholder="e.g., Infra Host (Enterprise)" />
-      <button id="searchBtn" disabled>Search</button>
-    </div>
+    // First try exact in Column B
+    const matchB = rows.find(r => r.nameB.toLowerCase() === q);
+    if (matchB) return [matchB];
 
-    <div id="status" class="status">Loading workbook…</div>
-    <div id="results"></div>
-    <div class="small">Ensure this file sits next to this page: <code>DatadogPricelist2.1.xlsx</code></div>
-  </div>
+    // Then try exact in Column J
+    const matchJ = rows.find(r => r.nameJ.toLowerCase() === q);
+    if (matchJ) return [matchJ];
 
-  <script>
-    const EXCEL_FILE = 'DatadogPricelist2.1.xlsx'; // same folder
-    let rows = []; // parsed rows from sheet #2
+    // No exact match
+    return [];
+  }
 
-    // Currency formatter
-    const fmtUSD = n => {
-      if (n === null || n === undefined || n === '') return '';
-      const num = typeof n === 'number' ? n :
-        Number(String(n).replace(/[^0-9.-]/g, ''));
-      if (Number.isFinite(num)) {
-        return num.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
-      }
-      return n; // fallback
-    };
-
-    // Load workbook on start
-    (async function loadWorkbook() {
-      try {
-        const res = await fetch(EXCEL_FILE);
-        if (!res.ok) throw new Error(`HTTP ${res.status} loading ${EXCEL_FILE}`);
-        const ab = await res.arrayBuffer();
-        const wb = XLSX.read(ab, { type: 'array' });
-
-        // Grab sheet #2 (index 1)
-        const sheetName = wb.SheetNames[1];
-        const ws = wb.Sheets[sheetName];
-        if (!ws) throw new Error('Sheet #2 not found');
-
-        // Build row objects using A, B, E, J
-        const ref = ws['!ref'];
-        const range = XLSX.utils.decode_range(ref);
-        for (let r = range.s.r + 1; r <= range.e.r; r++) { // +1 assuming first row is header
-          const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
-          const A = cell(0); // SKU
-          const B = cell(1); // Product Name (primary)
-          const E = cell(4); // Annual Price
-          const J = cell(9); // Product Name (fallback / alt)
-          // Skip totally empty lines
-          if (A === '' && B === '' && J === '' && E === '') continue;
-          rows.push({ sku: String(A).trim(), nameB: String(B).trim(), priceE: E, nameJ: String(J).trim() });
-        }
-
-        document.getElementById('status').textContent = `Workbook loaded (${rows.length} rows from "${sheetName}").`;
-        document.getElementById('searchBtn').disabled = false;
-      } catch (err) {
-        document.getElementById('status').textContent = `Failed to load workbook: ${err.message}`;
-        console.error(err);
-      }
-    })();
-
-    // Search logic: Column B first, then Column J
-    function searchProducts(query) {
-      const q = query.trim().toLowerCase();
-      if (!q) return [];
-
-      const inB = rows.filter(r => r.nameB.toLowerCase().includes(q));
-      if (inB.length) return inB;
-
-      const inJ = rows.filter(r => r.nameJ.toLowerCase().includes(q));
-      return inJ;
+  function renderResults(list, query) {
+    const wrap = document.getElementById('results');
+    if (!list.length) {
+      wrap.innerHTML = `<p>No exact match found for <b>${escapeHtml(query)}</b>.</p>`;
+      return;
     }
+    const r = list[0];
+    wrap.innerHTML = `
+      <table>
+        <thead>
+          <tr><th>SKU (A)</th><th>Product Name</th><th>Annual Price (E)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${escapeHtml(r.sku)}</td>
+            <td>${escapeHtml(r.nameB || r.nameJ)}</td>
+            <td>${fmtUSD(r.priceE)}</td>
+          </tr>
+        </tbody>
+      </table>`;
+  }
 
-    function renderResults(list, query) {
-      const wrap = document.getElementById('results');
-      if (!list.length) {
-        wrap.innerHTML = `<p>No matches for <b>${escapeHtml(query)}</b>.</p>`;
-        return;
-      }
-      // Deduplicate / tidy and sort by best text match length
-      const uniq = [];
-      const seen = new Set();
-      for (const r of list) {
-        const key = `${r.sku}||${r.nameB}||${r.nameJ}||${r.priceE}`;
-        if (!seen.has(key)) { uniq.push(r); seen.add(key); }
-      }
-      uniq.sort((a,b)=> (a.nameB||a.nameJ).length - (b.nameB||b.nameJ).length);
+  // Wire up UI
+  const input = document.getElementById('query');
+  const btn = document.getElementById('searchBtn');
+  btn.addEventListener('click', () => {
+    const q = input.value;
+    renderResults(exactMatchSearch(q), q);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !btn.disabled) btn.click();
+  });
+</script>
 
-      const rowsHtml = uniq.map(r => `
-        <tr>
-          <td>${escapeHtml(r.sku)}</td>
-          <td>${escapeHtml(r.nameB || r.nameJ)}</td>
-          <td>${fmtUSD(r.priceE)}</td>
-        </tr>`).join('');
-
-      wrap.innerHTML = `
-        <table>
-          <thead>
-            <tr><th>SKU (A)</th><th>Product Name (B → J)</th><th>Annual Price (E)</th></tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>`;
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[m]));
-    }
-
-    // Wire up UI
-    const input = document.getElementById('query');
-    const btn = document.getElementById('searchBtn');
-    btn.addEventListener('click', () => {
-      const q = input.value;
-      const list = searchProducts(q);
-      renderResults(list, q);
-    });
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !btn.disabled) btn.click();
-    });
-  </script>
-</body>
-</html>
 
