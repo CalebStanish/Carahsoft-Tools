@@ -13,12 +13,13 @@
     .muted { color:#9bb0c5; margin:0 0 18px; }
     .row { display:flex; gap:12px; margin: 12px 0 18px; align-items:center; }
     textarea { width:100%; min-height:160px; padding:12px 14px; border-radius:12px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; resize:vertical; }
-    button { padding:12px 16px; border:0; border-radius:10px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; }
+    button { padding:8px 14px; border:0; border-radius:8px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; font-size:0.85rem; }
+    button.small-btn { padding:6px 10px; font-size:0.75rem; background:#5f9fff; margin-top:4px; }
     button:disabled{opacity:.5; cursor:not-allowed;}
     .status { font-size:.95rem; color:#9bb0c5; margin:6px 0 12px; }
     table { width:100%; border-collapse:collapse; margin-top:10px; }
     th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #223251; }
-    th { color:#9bb0c5; font-weight:600; }
+    th { color:#9bb0c5; font-weight:600; vertical-align:bottom; }
     .small { font-size:.9rem; color:#9bb0c5; margin-top:10px; }
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2742; color:#cfe0ff; font-size:.8rem; margin-left:6px;}
     .notfound { margin-top:14px; padding:12px; background:#1a243e; border-radius:10px; }
@@ -50,6 +51,7 @@
   <script>
     const EXCEL_FILE = 'DatadogPricelist2.1.xlsx';
     let rows = [];
+    let lastResults = [];
 
     const fmtUSD = n => {
       if (n === null || n === undefined || n === '') return '';
@@ -119,6 +121,13 @@
       }[m]));
     }
 
+    function copyColumn(field) {
+      const text = lastResults.map(r => r[field]).join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        alert(`${field.toUpperCase()} column copied to clipboard!`);
+      });
+    }
+
     function renderBatch(inputText) {
       const resultsWrap = document.getElementById('results');
       const notFoundWrap = document.getElementById('notfound');
@@ -140,12 +149,14 @@
             matched: hit.nameB || hit.nameJ,
             sku: hit.sku,
             price: hit.priceD,
-            annual: hit.priceE
+            annual: fmtUSD(hit.priceE)
           });
         } else {
           misses.push(name);
         }
       }
+
+      lastResults = rowsOut; // store for copy buttons
 
       if (rowsOut.length) {
         resultsWrap.innerHTML = `
@@ -154,9 +165,15 @@
               <tr>
                 <th>Input Name</th>
                 <th>Matched Name</th>
-                <th>SKU (A)</th>
+                <th>
+                  SKU (A)<br>
+                  <button class="small-btn" onclick="copyColumn('sku')">Copy SKU</button>
+                </th>
                 <th>Price (D)</th>
-                <th>Annual Price (E)</th>
+                <th>
+                  Annual Price (E)<br>
+                  <button class="small-btn" onclick="copyColumn('annual')">Copy Annual</button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -166,7 +183,7 @@
                   <td>${escapeHtml(r.matched)}</td>
                   <td>${escapeHtml(r.sku)}</td>
                   <td>${fmtUSD(r.price)}</td>
-                  <td>${fmtUSD(r.annual)}</td>
+                  <td>${escapeHtml(r.annual)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -195,6 +212,9 @@
         renderBatch(ta.value);
       }
     });
+
+    window.copyColumn = copyColumn; // expose to HTML
   </script>
 </body>
 </html>
+
