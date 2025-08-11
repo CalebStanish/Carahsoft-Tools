@@ -30,7 +30,7 @@
     <h1>Datadog Price – Annual Lookup <span class="pill">Sheet 2 • Exact Match</span></h1>
     <p class="muted">
       Paste a column of product names from Excel (one per line). We’ll try an <b>exact match</b> in Column <b>B</b> first, then Column <b>J</b>.
-      For each input, we return <b>SKU (A)</b> and <b>Annual Price (E)</b>.
+      For each input, we return <b>SKU (A)</b>, <b>Price (D)</b>, and <b>Annual Price (E)</b>.
     </p>
 
     <textarea id="names" placeholder="Paste product names here — one per line"></textarea>
@@ -48,8 +48,8 @@
   </div>
 
   <script>
-    const EXCEL_FILE = 'DatadogPricelist2.1.xlsx'; // same folder
-    let rows = []; // parsed rows from sheet #2
+    const EXCEL_FILE = 'DatadogPricelist2.1.xlsx';
+    let rows = [];
 
     const fmtUSD = n => {
       if (n === null || n === undefined || n === '') return '';
@@ -84,11 +84,12 @@
         for (let r = range.s.r + 1; r <= range.e.r; r++) {
           const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
           const A = cell(0); // SKU
-          const B = cell(1); // Product Name (primary)
-          const E = cell(4); // Annual Price
-          const J = cell(9); // Product Name (alt)
-          if (A === '' && B === '' && J === '' && E === '') continue;
-          rows.push({ sku: String(A).trim(), nameB: String(B).trim(), priceE: E, nameJ: String(J).trim() });
+          const B = cell(1); // Product Name (B)
+          const D = cell(3); // Price (D)
+          const E = cell(4); // Annual Price (E)
+          const J = cell(9); // Product Name (J)
+          if (A === '' && B === '' && J === '' && E === '' && D === '') continue;
+          rows.push({ sku: String(A).trim(), nameB: String(B).trim(), priceD: D, priceE: E, nameJ: String(J).trim() });
         }
 
         document.getElementById('status').textContent = `Workbook loaded (${rows.length} rows from "${sheetName}").`;
@@ -138,7 +139,8 @@
             input: name,
             matched: hit.nameB || hit.nameJ,
             sku: hit.sku,
-            price: hit.priceE
+            price: hit.priceD,
+            annual: hit.priceE
           });
         } else {
           misses.push(name);
@@ -153,6 +155,7 @@
                 <th>Input Name</th>
                 <th>Matched Name</th>
                 <th>SKU (A)</th>
+                <th>Price (D)</th>
                 <th>Annual Price (E)</th>
               </tr>
             </thead>
@@ -163,6 +166,7 @@
                   <td>${escapeHtml(r.matched)}</td>
                   <td>${escapeHtml(r.sku)}</td>
                   <td>${fmtUSD(r.price)}</td>
+                  <td>${fmtUSD(r.annual)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -194,4 +198,3 @@
   </script>
 </body>
 </html>
-
