@@ -11,8 +11,9 @@
     .card { margin:auto; width:min(1100px, 94vw); background:#111a2b; padding:28px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
     h1 { margin:0 0 8px; font-size:1.4rem; }
     .muted { color:#9bb0c5; margin:0 0 18px; }
-    .row { display:flex; gap:12px; margin: 12px 0 18px; align-items:center; }
+    .row { display:flex; gap:12px; margin: 12px 0 18px; align-items:center; flex-wrap:wrap; }
     textarea { width:100%; min-height:160px; padding:12px 14px; border-radius:12px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; resize:vertical; }
+    select { padding:10px 12px; border-radius:10px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; }
     button { padding:8px 14px; border:0; border-radius:8px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; font-size:0.85rem; }
     button.small-btn { padding:6px 10px; font-size:0.75rem; background:#5f9fff; margin-top:4px; }
     button:disabled{opacity:.5; cursor:not-allowed;}
@@ -24,15 +25,25 @@
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2742; color:#cfe0ff; font-size:.8rem; margin-left:6px;}
     .notfound { margin-top:14px; padding:12px; background:#1a243e; border-radius:10px; }
     code { background:#0d1626; padding:2px 6px; border-radius:6px; }
+    label { color:#9bb0c5; font-size:0.95rem; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Datadog Price – Annual Lookup <span class="pill">Sheet 2 • Exact Match</span></h1>
+    <h1>Datadog Price Lookup <span class="pill">Sheet 2 • Exact Match</span></h1>
     <p class="muted">
-      Paste a column of product names from Excel (one per line). We’ll try an <b>exact match</b> in Column <b>B</b> first, then Column <b>J</b>.
-      For each input, we return <b>SKU (A)</b>, <b>Price (D)</b>, and <b>Annual Price (E)</b>.
+      Paste a column of product names from Excel (one per line). Choose a search mode below.<br/>
+      <b>Price – Annual:</b> search Column <b>B</b>, then <b>J</b>. &nbsp;|&nbsp;
+      <b>Government Price – Annual:</b> search Column <b>C</b>, then <b>J</b>.
     </p>
+
+    <div class="row">
+      <label for="mode">Search mode:</label>
+      <select id="mode">
+        <option value="commercial">Price – Annual (B → J)</option>
+        <option value="government">Government Price – Annual (C → J)</option>
+      </select>
+    </div>
 
     <textarea id="names" placeholder="Paste product names here — one per line"></textarea>
     <div class="row">
@@ -77,7 +88,7 @@
         const ab = await res.arrayBuffer();
         const wb = XLSX.read(ab, { type: 'array' });
 
-        const sheetName = wb.SheetNames[1];
+        const sheetName = wb.SheetNames[1]; // Sheet #2
         const ws = wb.Sheets[sheetName];
         if (!ws) throw new Error('Sheet #2 not found');
 
@@ -86,12 +97,20 @@
         for (let r = range.s.r + 1; r <= range.e.r; r++) {
           const cell = (c) => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
           const A = cell(0); // SKU
-          const B = cell(1); // Product Name (B)
-          const D = cell(3); // Price (D)
-          const E = cell(4); // Annual Price (E)
-          const J = cell(9); // Product Name (J)
-          if (A === '' && B === '' && J === '' && E === '' && D === '') continue;
-          rows.push({ sku: String(A).trim(), nameB: String(B).trim(), priceD: D, priceE: E, nameJ: String(J).trim() });
+          const B = cell(1); // Product Name (Commercial)
+          const C = cell(2); // Product Name (Government)
+          const D = cell(3); // Price
+          const E = cell(4); // Annual Price
+          const J = cell(9); // Alt Name
+          if (A === '' && B === '' && C === '' && J === '' && E === '' && D === '') continue;
+          rows.push({
+            sku: String(A).trim(),
+            nameB: String(B).trim(),
+            nameC: String(C).trim(),
+            priceD: D,
+            priceE: E,
+            nameJ: String(J).trim()
+          });
         }
 
         document.getElementById('status').textContent = `Workbook loaded (${rows.length} rows from "${sheetName}").`;
@@ -102,17 +121,26 @@
       }
     })();
 
-    function exactMatchOne(name) {
+    // Exact match for one name, based on selected mode
+    function exactMatchOne(name, mode) {
       const q = normalize(name);
       if (!q) return null;
 
-      const matchB = rows.find(r => normalize(r.nameB) === q);
-      if (matchB) return matchB;
-
-      const matchJ = rows.find(r => normalize(r.nameJ) === q);
-      if (matchJ) return matchJ;
-
-      return null;
+      if (mode === 'government') {
+        // Government: search C first, then J
+        const matchC = rows.find(r => normalize(r.nameC) === q);
+        if (matchC) return { ...matchC, matchedName: matchC.nameC || matchC.nameJ };
+        const matchJg = rows.find(r => normalize(r.nameJ) === q);
+        if (matchJg) return { ...matchJg, matchedName: matchJg.nameC || matchJg.nameJ };
+        return null;
+      } else {
+        // Commercial (Price – Annual): search B first, then J
+        const matchB = rows.find(r => normalize(r.nameB) === q);
+        if (matchB) return { ...matchB, matchedName: matchB.nameB || matchB.nameJ };
+        const matchJ = rows.find(r => normalize(r.nameJ) === q);
+        if (matchJ) return { ...matchJ, matchedName: matchJ.nameB || matchJ.nameJ };
+        return null;
+      }
     }
 
     function escapeHtml(s) {
@@ -131,6 +159,7 @@
     function renderBatch(inputText) {
       const resultsWrap = document.getElementById('results');
       const notFoundWrap = document.getElementById('notfound');
+      const mode = document.getElementById('mode').value;
 
       const lines = inputText
         .split(/\r?\n/)
@@ -142,11 +171,11 @@
       const misses = [];
 
       for (const name of lines) {
-        const hit = exactMatchOne(name);
+        const hit = exactMatchOne(name, mode);
         if (hit) {
           rowsOut.push({
             input: name,
-            matched: hit.nameB || hit.nameJ,
+            matched: hit.matchedName,
             sku: hit.sku,
             price: hit.priceD,
             annual: fmtUSD(hit.priceE)
@@ -156,7 +185,7 @@
         }
       }
 
-      lastResults = rowsOut; // store for copy buttons
+      lastResults = rowsOut;
 
       if (rowsOut.length) {
         resultsWrap.innerHTML = `
