@@ -2,40 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Datadog SKU Lookup — Exact Match</title>
+  <title>Datadog SKU Lookup — Exact Match (Multi-line)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     body { margin: 0; background:#0b1220; color:#eef2f7; display:flex; min-height:100vh; }
-    .card { margin:auto; width:min(900px, 92vw); background:#111a2b; padding:28px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    .card { margin:auto; width:min(1100px, 94vw); background:#111a2b; padding:28px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
     h1 { margin:0 0 8px; font-size:1.4rem; }
     .muted { color:#9bb0c5; margin:0 0 18px; }
-    .row { display:flex; gap:10px; margin: 12px 0 18px; }
-    input { flex:1; padding:12px 14px; border-radius:10px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; }
+    .row { display:flex; gap:12px; margin: 12px 0 18px; align-items:center; }
+    textarea { width:100%; min-height:160px; padding:12px 14px; border-radius:12px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; resize:vertical; }
     button { padding:12px 16px; border:0; border-radius:10px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; }
     button:disabled{opacity:.5; cursor:not-allowed;}
     .status { font-size:.95rem; color:#9bb0c5; margin:6px 0 12px; }
-    table { width:100%; border-collapse:collapse; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
     th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #223251; }
     th { color:#9bb0c5; font-weight:600; }
     .small { font-size:.9rem; color:#9bb0c5; margin-top:10px; }
     .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2742; color:#cfe0ff; font-size:.8rem; margin-left:6px;}
+    .notfound { margin-top:14px; padding:12px; background:#1a243e; border-radius:10px; }
+    code { background:#0d1626; padding:2px 6px; border-radius:6px; }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Datadog Price – Annual Lookup <span class="pill">Sheet 2</span></h1>
-    <p class="muted">Exact match only. We’ll try Column <b>B</b> first, then Column <b>J</b>. Returns SKU (A) and Annual Price (E).</p>
+    <h1>Datadog Price – Annual Lookup <span class="pill">Sheet 2 • Exact Match</span></h1>
+    <p class="muted">
+      Paste a column of product names from Excel (one per line). We’ll try an <b>exact match</b> in Column <b>B</b> first, then Column <b>J</b>.
+      For each input, we return <b>SKU (A)</b> and <b>Annual Price (E)</b>.
+    </p>
 
+    <textarea id="names" placeholder="Paste product names here — one per line"></textarea>
     <div class="row">
-      <input id="query" type="text" placeholder="Type the product name exactly as in Excel" />
       <button id="searchBtn" disabled>Search</button>
+      <div id="status" class="status">Loading workbook…</div>
     </div>
 
-    <div id="status" class="status">Loading workbook…</div>
     <div id="results"></div>
-    <div class="small">This page must sit next to <code>DatadogPricelist2.1.xlsx</code> and be served over HTTP (e.g., Live Server).</div>
+    <div id="notfound"></div>
+
+    <div class="small">
+      This page must sit next to <code>DatadogPricelist2.1.xlsx</code> and be served over HTTP (e.g., Live Server).
+    </div>
   </div>
 
   <script>
@@ -53,7 +62,7 @@
       return n;
     };
 
-    // Normalize strings for comparison: trim spaces and collapse internal whitespace
+    // Normalize strings for comparison: trim and collapse internal whitespace
     function normalize(s) {
       return String(s ?? '')
         .trim()
@@ -95,20 +104,18 @@
       }
     })();
 
-    // Exact match search: Column B first, then Column J
-    function exactMatchSearch(query) {
-      const q = normalize(query);
-      if (!q) return [];
+    // Exact match for a single name: B first, then J
+    function exactMatchOne(name) {
+      const q = normalize(name);
+      if (!q) return null;
 
-      // First try exact in Column B
       const matchB = rows.find(r => normalize(r.nameB) === q);
-      if (matchB) return [matchB];
+      if (matchB) return { ...matchB, matchedFrom: 'B' };
 
-      // Then try exact in Column J
       const matchJ = rows.find(r => normalize(r.nameJ) === q);
-      if (matchJ) return [matchJ];
+      if (matchJ) return { ...matchJ, matchedFrom: 'J' };
 
-      return [];
+      return null;
     }
 
     function escapeHtml(s) {
@@ -117,37 +124,84 @@
       }[m]));
     }
 
-    function renderResults(list, query) {
-      const wrap = document.getElementById('results');
-      if (!list.length) {
-        wrap.innerHTML = `<p>No exact match found for <b>${escapeHtml(query)}</b>.</p>`;
-        return;
+    function renderBatch(inputText) {
+      const resultsWrap = document.getElementById('results');
+      const notFoundWrap = document.getElementById('notfound');
+
+      // Split lines (handles Excel paste, including tabs—take first cell per line)
+      const lines = inputText
+        .split(/\r?\n/)
+        .map(l => String(l).split(/\t/)[0]) // if they pasted entire rows, take first column cell
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+      const rowsOut = [];
+      const misses = [];
+
+      for (const name of lines) {
+        const hit = exactMatchOne(name);
+        if (hit) {
+          rowsOut.push({
+            input: name,
+            matched: hit.nameB || hit.nameJ,
+            sku: hit.sku,
+            price: hit.priceE,
+            src: hit.matchedFrom
+          });
+        } else {
+          misses.push(name);
+        }
       }
-      const r = list[0];
-      wrap.innerHTML = `
-        <table>
-          <thead>
-            <tr><th>SKU (A)</th><th>Product Name</th><th>Annual Price (E)</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>${escapeHtml(r.sku)}</td>
-              <td>${escapeHtml(r.nameB || r.nameJ)}</td>
-              <td>${fmtUSD(r.priceE)}</td>
-            </tr>
-          </tbody>
-        </table>`;
+
+      if (rowsOut.length) {
+        const html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Input Name</th>
+                <th>Matched Name</th>
+                <th>SKU (A)</th>
+                <th>Annual Price (E)</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsOut.map(r => `
+                <tr>
+                  <td>${escapeHtml(r.input)}</td>
+                  <td>${escapeHtml(r.matched)}</td>
+                  <td>${escapeHtml(r.sku)}</td>
+                  <td>${fmtUSD(r.price)}</td>
+                  <td>Col ${r.src}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+        resultsWrap.innerHTML = html;
+      } else {
+        resultsWrap.innerHTML = `<p>No matches found.</p>`;
+      }
+
+      if (misses.length) {
+        notFoundWrap.innerHTML = `
+          <div class="notfound">
+            <strong>Not found (${misses.length}):</strong><br>
+            ${misses.map(m => `<code>${escapeHtml(m)}</code>`).join(' ')}
+          </div>`;
+      } else {
+        notFoundWrap.innerHTML = '';
+      }
     }
 
     // Wire up UI
-    const input = document.getElementById('query');
     const btn = document.getElementById('searchBtn');
-    btn.addEventListener('click', () => {
-      const q = input.value;
-      renderResults(exactMatchSearch(q), q);
-    });
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !btn.disabled) btn.click();
+    const ta = document.getElementById('names');
+    btn.addEventListener('click', () => renderBatch(ta.value));
+    ta.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'enter' && !btn.disabled) {
+        e.preventDefault();
+        renderBatch(ta.value);
+      }
     });
   </script>
 </body>
