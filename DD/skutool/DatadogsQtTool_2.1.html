@@ -27,9 +27,7 @@
     .col-6 { grid-column: span 6; }
     .control { display: flex; flex-direction: column; gap: 8px; }
     label { font-size: 0.9rem; color: var(--muted); }
-    input[type="text"], select, button {
-      background: #0d1420; border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; outline: none;
-    }
+    input[type="text"], select, button { background: #0d1420; border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; outline: none; }
     button { cursor: pointer; transition: transform .05s ease, background .2s ease; }
     button:hover { transform: translateY(-1px); }
     .btn-primary { background: #0f2236; border-color: #1d3750; }
@@ -105,6 +103,9 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // ===== Config =====
+    const FILE_NAME = "Datadog Pricelist v17 - UPDATED-.xlsx"; // exact name in repo next to this HTML
+
     // Utility: column letter -> zero-based index
     const colIndex = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7, I: 8, J: 9, K: 10 };
 
@@ -122,37 +123,58 @@
 
     function setStatus(text){ $("status").textContent = text; }
 
-    // Auto-load workbook from GitHub repo (same folder)
+    // Auto-load workbook from GitHub repo (same folder) with robust filename handling
     async function loadWorkbook(){
       try{
-        // URL-encode spaces in the filename for GitHub Pages
-        const response = await fetch("Datadog%20Pricelist%20v17%20-%20UPDATED-.xlsx");
-        if(!response.ok) throw new Error(`HTTP ${response.status}`);
-        const arrayBuffer = await response.arrayBuffer();
+        const encoded = encodeURIComponent(FILE_NAME); // handles spaces & special chars
+
+        // First try encoded path (best for GitHub Pages). If that fails, try raw filename.
+        let arrayBuffer;
+        try {
+          const r1 = await fetch(encoded, { cache: 'no-store' });
+          if(!r1.ok) throw new Error(`HTTP ${r1.status}`);
+          arrayBuffer = await r1.arrayBuffer();
+        } catch(e1){
+          const r2 = await fetch(FILE_NAME, { cache: 'no-store' });
+          if(!r2.ok) throw new Error(`HTTP ${r2.status}`);
+          arrayBuffer = await r2.arrayBuffer();
+        }
+
         workbook = XLSX.read(arrayBuffer, { type: "array" });
         setStatus(`Workbook loaded from repo • Sheets: ${workbook.SheetNames.length}`);
         showToast("Workbook loaded from repo");
       } catch (error){
         console.error("Error loading Excel file:", error);
-        setStatus("Failed to load workbook from repo");
+        setStatus("Failed to load workbook from repo — check name/location/branch");
         showToast("Failed to load workbook");
       }
     }
 
     document.addEventListener("DOMContentLoaded", loadWorkbook);
 
+    // Sheet selection with tolerant matching & page-index fallback
+    function normalizeName(n){ return (n||'').toString().trim().toLowerCase(); }
+
     function pickSheet(mode){
       if(!workbook) return null;
       const names = workbook.SheetNames;
+      const lower = names.map(n => normalizeName(n));
 
       if(mode === 'price-annual'){
-        const preferred = names.find(n => n.trim().toLowerCase() === 'annual');
-        if(preferred) return preferred;
-        return names[1] || names[0];
+        // Accept common variants
+        const wanted = ['annual', 'price annual'];
+        for(const w of wanted){
+          const idx = lower.indexOf(w);
+          if(idx !== -1) return names[idx];
+        }
+        return names[1] || names[0]; // page 2 fallback
       } else {
-        const targetName = names.find(n => n.trim().toLowerCase() === 'government price annual');
-        if(targetName) return targetName;
-        return names[5] || names[names.length-1];
+        const wanted = ['government price annual', 'government price', 'gov price annual'];
+        for(const w of wanted){
+          const idx = lower.indexOf(w);
+          if(idx !== -1) return names[idx];
+        }
+        return names[5] || names[names.length-1]; // page 6 fallback
       }
     }
 
