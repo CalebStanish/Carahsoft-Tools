@@ -1,3 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Datadog SKU Lookup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background:#0b1220; color:#eef2f7; display:flex; min-height:100vh; }
+    .card { margin:auto; width:min(900px, 92vw); background:#111a2b; padding:28px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    h1 { margin:0 0 8px; font-size:1.4rem; }
+    .muted { color:#9bb0c5; margin:0 0 18px; }
+    .row { display:flex; gap:10px; margin: 12px 0 18px; }
+    input { flex:1; padding:12px 14px; border-radius:10px; border:1px solid #2a3b5d; background:#0d1626; color:#eef2f7; }
+    button { padding:12px 16px; border:0; border-radius:10px; background:#3a86ff; color:white; font-weight:600; cursor:pointer; }
+    button:disabled{opacity:.5; cursor:not-allowed;}
+    .status { font-size:.95rem; color:#9bb0c5; margin:6px 0 12px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid #223251; }
+    th { color:#9bb0c5; font-weight:600; }
+    .small { font-size:.9rem; color:#9bb0c5; margin-top:10px; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#1a2742; color:#cfe0ff; font-size:.8rem; margin-left:6px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Datadog Price – Annual Lookup <span class="pill">Sheet 2</span></h1>
+    <p class="muted">Type a product name (we’ll search Column <b>B</b> first, then Column <b>J</b>). Returns SKU (A) and Annual Price (E).</p>
+
+    <div class="row">
+      <input id="query" type="text" placeholder="e.g., Infra Host (Enterprise)" />
+      <button id="searchBtn" disabled>Search</button>
+    </div>
+
+    <div id="status" class="status">Loading workbook…</div>
+    <div id="results"></div>
+    <div class="small">Ensure this file sits next to this page: <code>DatadogPricelist2.1.xlsx</code></div>
+  </div>
+
 <script>
   // Exact match search: Column B first, then Column J
   function exactMatchSearch(query) {
@@ -49,5 +89,6 @@
     if (e.key === 'Enter' && !btn.disabled) btn.click();
   });
 </script>
-
+</body>
+</html>
 
