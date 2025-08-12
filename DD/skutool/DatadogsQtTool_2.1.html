@@ -26,14 +26,13 @@
     .mode-select { margin-bottom: 12px; }
     .mode-select button { background:#222f47; border:none; padding:8px 14px; margin-right:8px; border-radius:8px; cursor:pointer; color:#eef2f7; }
     .mode-select button.active { background:#3a86ff; }
+    .nf { color: #ff6b6b; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Datadog Price Lookup</h1>
-    <p class="muted">
-      Paste a column of product names from Excel (one per line). Choose a search mode below.
-    </p>
+    <p class="muted">Paste a column of product names from Excel (one per line). Choose a search mode below.</p>
 
     <div class="mode-select">
       <button id="modeCommercial" class="active">Price – Annual</button>
@@ -153,9 +152,17 @@
             input: name,
             matched: hit.nameB || hit.nameJ,
             sku: hit.sku,
-            price: hit.priceE
+            price: hit.priceE,
+            found: true
           });
         } else {
+          rowsOut.push({
+            input: name,
+            matched: '',
+            sku: '',
+            price: '',
+            found: false
+          });
           misses.push(name);
         }
       }
@@ -174,10 +181,10 @@
             <tbody>
               ${rowsOut.map(r => `
                 <tr>
-                  <td>${escapeHtml(r.input)}</td>
+                  <td class="${!r.found ? 'nf' : ''}">${escapeHtml(r.input)}</td>
                   <td>${escapeHtml(r.matched)}</td>
                   <td>${escapeHtml(r.sku)}</td>
-                  <td>${fmtUSD(r.price)}</td>
+                  <td>${r.price ? fmtUSD(r.price) : ''}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -221,3 +228,4 @@
   </script>
 </body>
 </html>
+
