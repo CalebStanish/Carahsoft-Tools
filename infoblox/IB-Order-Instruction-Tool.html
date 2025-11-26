@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,6 +78,7 @@
             }
         }
     </style>
+
     <script>
         function updateParagraph() {
             const carahsoftPO = document.getElementById("carahsoftPO").value.trim();
@@ -84,8 +86,6 @@
             const winningReseller = document.getElementById("winningReseller").value.trim();
             const resellerPO = document.getElementById("resellerPO").value.trim();
             const orderDate = document.getElementById("orderDate").value.trim();
-            const customerPO = document.getElementById("customerPO").value.trim();
-            const euPoDate = document.getElementById("euPoDate").value.trim();
             const customerName = document.getElementById("customerName").value.trim();
             const vendorCostOff = document.getElementById("vendorCostOff").value.trim();
             const quoteCount = document.getElementById("quoteCount").value;
@@ -107,14 +107,27 @@
                 quotes = document.getElementById('quote1').value.trim();
             }
 
-            let carahsoftSentence = carahsoftPO ? `This was booked as Carahsoft PO#${carahsoftPO}` : `This PO has not been booked yet.`;
+            let carahsoftSentence = carahsoftPO
+                ? `This was booked as Carahsoft PO#${carahsoftPO}`
+                : `This PO has not been booked yet.`;
 
-            let vendorCostSentence = vendorCostOff ? `Vendor cost is off by $${vendorCostOff} - please adjust and absorb/charge by Carahsoft.\n\n` : '';
+            let vendorCostSentence = vendorCostOff
+                ? `Vendor cost is off by $${vendorCostOff} - please adjust and absorb/charge by Carahsoft.\n\n`
+                : '';
 
-            let paragraph = `${carahsoftSentence}\n\nThis is an Infoblox Federal, Inc. order. Please see PO for Bill to!\n\n${vendorCostSentence}Please request the following on a separate line, bold, and as distinct as possible the following statement on the Infoblox PO:\n\n"This PO includes all SKUs, line items, dollar value, and term length as specified per quote ${quotes}. Customer assets have not changed physical location per the previous contract. Please only send customer licenses & tracking to the following addresses: csomship@carahsoft.com and Infoblox@Carahsoft.com and the end user ${euEmail}. The reseller who won the bid was ${winningReseller}, reseller PO# ${resellerPO}, dated ${orderDate}. This is end user PO# ${customerPO}, dated ${euPoDate}.”\n\nPlease list the customer agency as ${customerName} on the vendor PO.\n`;
+            let paragraph = `${carahsoftSentence}
+
+This is an Infoblox Federal, Inc. order. Please see PO for Bill to!
+
+${vendorCostSentence}Please request the following on a separate line, bold, and as distinct as possible the following statement on the Infoblox PO:
+
+"This PO includes all SKUs, line items, dollar value, and term length as specified per quote ${quotes}. Customer assets have not changed physical location per the previous contract. Please only send customer licenses & tracking to the following addresses: csomship@carahsoft.com and Infoblox@Carahsoft.com and the end user ${euEmail}. The reseller who won the bid was ${winningReseller}, reseller PO# ${resellerPO}, dated ${orderDate}."
+
+Please list the customer agency as ${customerName} on the vendor PO.
+`;
 
             if (quoteCount > 1) {
-                paragraph += `Can we please send two PO's to Infoblox?\n\n${additionalPOText}`;
+                paragraph += `\nCan we please send two PO's to Infoblox?\n\n${additionalPOText}`;
             }
 
             if (document.getElementById('lapsedFee').checked) {
@@ -135,16 +148,29 @@
 
             for (let i = 1; i <= 6; i++) {
                 document.getElementById(`lineItemGroup${i}`).style.display = (quoteCount >= i) ? 'block' : 'none';
-                document.getElementById(`quote${i}`).style.display = (quoteCount >= i) ? 'block' : 'none';
+                if (document.getElementById(`quote${i}`)) {
+                    document.getElementById(`quote${i}`).style.display = (quoteCount >= i) ? 'block' : 'none';
+                }
             }
 
-            // Show Line Item #1 only if there are more than 1 quote
             document.getElementById('lineItem1').style.display = (quoteCount > 1) ? 'block' : 'none';
 
             updateParagraph();
         }
+
+        function copyParagraph() {
+            const outputText = document.getElementById("output").textContent;
+            navigator.clipboard.writeText(outputText)
+                .then(() => {
+                    alert("Copied to clipboard!");
+                })
+                .catch(err => {
+                    console.error("Could not copy text: ", err);
+                });
+        }
     </script>
 </head>
+
 <body>
     <div class="container">
         <div class="input-container">
@@ -161,80 +187,74 @@
             </select>
 
             <label for="quote1">Infoblox Quote #1:</label>
-            <input type="text" id="quote1" placeholder="Enter Quote #1" oninput="updateParagraph()">
+            <input type="text" id="quote1" oninput="updateParagraph()">
 
             <div class="line-item-group" id="lineItemGroup1">
                 <label for="lineItem1">Line Item #1:</label>
-                <input type="text" id="lineItem1" placeholder="Enter Line Item #1" oninput="updateParagraph()">
+                <input type="text" id="lineItem1" oninput="updateParagraph()">
             </div>
 
             <div class="line-item-group" id="lineItemGroup2">
                 <label for="quote2">Infoblox Quote #2:</label>
-                <input type="text" id="quote2" placeholder="Enter Quote #2" oninput="updateParagraph()">
+                <input type="text" id="quote2" oninput="updateParagraph()">
                 <label for="lineItem2">Line Item #2:</label>
-                <input type="text" id="lineItem2" placeholder="Enter Line Item #2" oninput="updateParagraph()">
+                <input type="text" id="lineItem2" oninput="updateParagraph()">
             </div>
 
             <div class="line-item-group" id="lineItemGroup3">
                 <label for="quote3">Infoblox Quote #3:</label>
-                <input type="text" id="quote3" placeholder="Enter Quote #3" oninput="updateParagraph()">
+                <input type="text" id="quote3" oninput="updateParagraph()">
                 <label for="lineItem3">Line Item #3:</label>
-                <input type="text" id="lineItem3" placeholder="Enter Line Item #3" oninput="updateParagraph()">
+                <input type="text" id="lineItem3" oninput="updateParagraph()">
             </div>
 
             <div class="line-item-group" id="lineItemGroup4">
                 <label for="quote4">Infoblox Quote #4:</label>
-                <input type="text" id="quote4" placeholder="Enter Quote #4" oninput="updateParagraph()">
+                <input type="text" id="quote4" oninput="updateParagraph()">
                 <label for="lineItem4">Line Item #4:</label>
-                <input type="text" id="lineItem4" placeholder="Enter Line Item #4" oninput="updateParagraph()">
+                <input type="text" id="lineItem4" oninput="updateParagraph()">
             </div>
 
             <div class="line-item-group" id="lineItemGroup5">
                 <label for="quote5">Infoblox Quote #5:</label>
-                <input type="text" id="quote5" placeholder="Enter Quote #5" oninput="updateParagraph()">
+                <input type="text" id="quote5" oninput="updateParagraph()">
                 <label for="lineItem5">Line Item #5:</label>
-                <input type="text" id="lineItem5" placeholder="Enter Line Item #5" oninput="updateParagraph()">
+                <input type="text" id="lineItem5" oninput="updateParagraph()">
             </div>
 
             <div class="line-item-group" id="lineItemGroup6">
                 <label for="quote6">Infoblox Quote #6:</label>
-                <input type="text" id="quote6" placeholder="Enter Quote #6" oninput="updateParagraph()">
+                <input type="text" id="quote6" oninput="updateParagraph()">
                 <label for="lineItem6">Line Item #6:</label>
-                <input type="text" id="lineItem6" placeholder="Enter Line Item #6" oninput="updateParagraph()">
+                <input type="text" id="lineItem6" oninput="updateParagraph()">
             </div>
 
             <label for="carahsoftPO">Carahsoft PO Number:</label>
-            <input type="text" id="carahsoftPO" placeholder="Enter Carahsoft PO" oninput="updateParagraph()">
+            <input type="text" id="carahsoftPO" oninput="updateParagraph()">
 
             <label for="euEmail">End User Email:</label>
-            <input type="text" id="euEmail" placeholder="Enter End User Email" oninput="updateParagraph()">
+            <input type="text" id="euEmail" oninput="updateParagraph()">
 
             <label for="winningReseller">Winning Reseller:</label>
-            <input type="text" id="winningReseller" placeholder="Enter Winning Reseller" oninput="updateParagraph()">
+            <input type="text" id="winningReseller" oninput="updateParagraph()">
 
             <label for="resellerPO">Reseller PO Number:</label>
-            <input type="text" id="resellerPO" placeholder="Enter Reseller PO" oninput="updateParagraph()">
+            <input type="text" id="resellerPO" oninput="updateParagraph()">
 
             <label for="orderDate">Order Date:</label>
-            <input type="text" id="orderDate" placeholder="Enter Order Date" oninput="updateParagraph()">
-
-            <label for="customerPO">Customer PO Number:</label>
-            <input type="text" id="customerPO" placeholder="Enter Customer PO" oninput="updateParagraph()">
-
-            <label for="euPoDate">End User PO Date:</label>
-            <input type="text" id="euPoDate" placeholder="Enter End User PO Date" oninput="updateParagraph()">
+            <input type="text" id="orderDate" oninput="updateParagraph()">
 
             <label for="customerName">Customer Name:</label>
-            <input type="text" id="customerName" placeholder="Enter Customer Name" oninput="updateParagraph()">
+            <input type="text" id="customerName" oninput="updateParagraph()">
 
             <label for="vendorCostOff">Vendor Cost Off:</label>
-            <input type="text" id="vendorCostOff" placeholder="Enter Vendor Cost Off" oninput="updateParagraph()">
+            <input type="text" id="vendorCostOff" oninput="updateParagraph()">
 
-            <label for="lapsedFee">
+            <label>
                 <input type="checkbox" id="lapsedFee" onclick="updateParagraph()"> Lapsed/Reinstatement Fee?
             </label>
 
-            <label for="billPerCustomerPO">
+            <label>
                 <input type="checkbox" id="billPerCustomerPO" onclick="updateParagraph()"> Bill Per Customer PO?
             </label>
         </div>
@@ -245,20 +265,5 @@
             <button class="copy-btn" onclick="copyParagraph()">Copy to Clipboard</button>
         </div>
     </div>
-
-    <script>
-        function copyParagraph() {
-            const outputText = document.getElementById("output").textContent;
-            navigator.clipboard.writeText(outputText)
-                .then(() => {
-                    alert("Copied to clipboard!");
-                })
-                .catch(err => {
-                    console.error("Could not copy text: ", err);
-                });
-        }
-    </script>
 </body>
 </html>
-
-
