@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SE Health Check Builder</title>
+    <style>
+        :root {
+            --primary: #007BFF;
+            --bg: #f4f6f8;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: #d1d5db;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            margin: 0 0 8px;
+        }
+
+        .muted {
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .customer-banner {
+            margin: 14px 0 6px;
+            max-width: 420px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 20px;
+        }
+
+        .btn {
+            border: 1px solid transparent;
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .btn.secondary {
+            background: #fff;
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .layout {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+            padding: 16px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+            font-size: 13px;
+        }
+
+        th {
+            background: #eef4ff;
+        }
+
+        .checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+        }
+
+        .checkboxes label {
+            text-transform: none;
+            font-size: 13px;
+            color: var(--text);
+            letter-spacing: normal;
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-list {
+            margin: 8px 0 0;
+            padding-left: 20px;
+            font-size: 13px;
+        }
+
+        .preview-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .preview-grid img {
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        #emailOutput {
+            min-height: 220px;
+            font-family: "Courier New", monospace;
+        }
+
+
+
+        @media (min-width: 1400px) and (min-aspect-ratio: 16/9) {
+            .page {
+                max-width: 1600px;
+                padding: 28px;
+            }
+
+            .layout {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 18px;
+            }
+
+            .field-grid {
+                grid-template-columns: repeat(3, minmax(160px, 1fr));
+            }
+
+            .customer-banner {
+                max-width: 560px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .page {
+                max-width: 1200px;
+                padding: 20px;
+            }
+
+            .layout {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            }
+
+            .field-grid {
+                grid-template-columns: repeat(2, minmax(140px, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .field-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            .toolbar,
+            #emailCard,
+            .back-link {
+                display: none !important;
+            }
+
+            body {
+                background: #fff;
+            }
+
+            .page {
+                max-width: none;
+                padding: 0;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>SE Health Check Builder</h1>
+            <p class="muted">Collect health check notes, appliance details, uploaded references, and generate a formatted email draft or PDF.</p>
+        </div>
+
+        <section class="card customer-banner">
+            <div class="field">
+                <label for="customerName">Customer Name</label>
+                <input id="customerName" type="text" placeholder="Example: Andover Public Schools">
+            </div>
+        </section>
+
+        <div class="toolbar">
+            <button type="button" class="btn" id="generateEmailBtn">Generate Email Draft</button>
+            <button type="button" class="btn secondary" id="copyEmailBtn">Copy Email Text</button>
+            <button type="button" class="btn secondary" id="savePdfBtn">Save/Print PDF</button>
+            <button type="button" class="btn secondary" id="addRowBtn">Add Appliance Row</button>
+            <a class="btn secondary back-link" href="../../index.html">← Back to Tool Directory</a>
+        </div>
+
+        <div class="layout">
+            <section class="card">
+                <h2>Engagement Details</h2>
+                <div class="field-grid">
+                    <div class="field"><label for="healthCheckDate">Date</label><input id="healthCheckDate" type="date"></div>
+                    <div class="field"><label for="preparedBy">Prepared By</label><input id="preparedBy" type="text"></div>
+                    <div class="field"><label for="customerContact">Customer Contact</label><input id="customerContact" type="text"></div>
+                    <div class="field full"><label for="environment">Environment Summary</label><textarea id="environment" placeholder="Example: 2 data centers, VMware, Anycast enabled"></textarea></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Grid & Service Information</h2>
+                <div class="field-grid">
+                    <div class="field"><label for="niosVersion">NIOS Version</label><input id="niosVersion" type="text"></div>
+                    <div class="field"><label for="gridName">Grid Name</label><input id="gridName" type="text"></div>
+                    <div class="field"><label for="upgradeGroup">Upgrade Groups</label><input id="upgradeGroup" type="text"></div>
+                    <div class="field"><label for="leaseTime">Lease Time</label><input id="leaseTime" type="text"></div>
+                    <div class="field"><label for="dhcpUtilization">DHCP Utilization</label><input id="dhcpUtilization" type="text"></div>
+                    <div class="field"><label for="totalLeases">Total Leases</label><input id="totalLeases" type="text"></div>
+                </div>
+
+                <h3>Checks Completed</h3>
+                <div class="checkboxes">
+                    <label><input type="checkbox" name="checks" value="Grid Pull"> Grid Pull</label>
+                    <label><input type="checkbox" name="checks" value="Check Backups"> Check Backups</label>
+                    <label><input type="checkbox" name="checks" value="Capacity Report"> Capacity Report</label>
+                    <label><input type="checkbox" name="checks" value="License Pull"> License Pull</label>
+                    <label><input type="checkbox" name="checks" value="DNS Scavenging"> DNS Scavenging</label>
+                    <label><input type="checkbox" name="checks" value="Anycast"> Anycast</label>
+                </div>
+            </section>
+
+            <section class="card" style="grid-column: 1 / -1;">
+                <h2>Appliance Inventory</h2>
+                <table id="applianceTable">
+                    <thead>
+                        <tr>
+                            <th>Appliance Name</th>
+                            <th>Appliance Type</th>
+                            <th>Services</th>
+                            <th>HA</th>
+                            <th>HW Type</th>
+                            <th>CPU Node 1</th>
+                            <th>CPU Node 2</th>
+                            <th>Disk Node 1</th>
+                            <th>Disk Node 2</th>
+                            <th>Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody id="applianceBody">
+                        <tr>
+                            <td><input type="text" data-col="Appliance Name"></td>
+                            <td><input type="text" data-col="Appliance Type"></td>
+                            <td><input type="text" data-col="Services"></td>
+                            <td><input type="text" data-col="HA"></td>
+                            <td><input type="text" data-col="HW Type"></td>
+                            <td><input type="text" data-col="CPU Node 1"></td>
+                            <td><input type="text" data-col="CPU Node 2"></td>
+                            <td><input type="text" data-col="Disk Node 1"></td>
+                            <td><input type="text" data-col="Disk Node 2"></td>
+                            <td><button type="button" class="btn secondary remove-row">X</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="card">
+                <h2>Additional Notes</h2>
+                <div class="field-grid">
+                    <div class="field full">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" placeholder="Capture key findings, risks, and recommendations."></textarea>
+                    </div>
+                    <div class="field full">
+                        <label for="nextSteps">Recommended Next Steps</label>
+                        <textarea id="nextSteps" placeholder="List actions for customer and internal teams."></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Files & Images</h2>
+                <div class="field">
+                    <label for="supportFiles">Upload Supporting Files (multiple)</label>
+                    <input id="supportFiles" type="file" multiple>
+                </div>
+                <ul id="fileList" class="file-list"></ul>
+
+                <div class="field" style="margin-top: 12px;">
+                    <label for="imageFiles">Upload Images/Screenshots</label>
+                    <input id="imageFiles" type="file" accept="image/*" multiple>
+                </div>
+                <div id="imagePreview" class="preview-grid"></div>
+            </section>
+
+            <section class="card" id="emailCard" style="grid-column: 1 / -1;">
+                <h2>Email Draft Output</h2>
+                <textarea id="emailOutput" placeholder="Click 'Generate Email Draft' to build formatted text."></textarea>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const applianceBody = document.getElementById('applianceBody');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const generateEmailBtn = document.getElementById('generateEmailBtn');
+        const copyEmailBtn = document.getElementById('copyEmailBtn');
+        const savePdfBtn = document.getElementById('savePdfBtn');
+        const supportFiles = document.getElementById('supportFiles');
+        const imageFiles = document.getElementById('imageFiles');
+        const fileList = document.getElementById('fileList');
+        const imagePreview = document.getElementById('imagePreview');
+        const emailOutput = document.getElementById('emailOutput');
+
+        function addInventoryRow() {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" data-col="Appliance Name"></td>
+                <td><input type="text" data-col="Appliance Type"></td>
+                <td><input type="text" data-col="Services"></td>
+                <td><input type="text" data-col="HA"></td>
+                <td><input type="text" data-col="HW Type"></td>
+                <td><input type="text" data-col="CPU Node 1"></td>
+                <td><input type="text" data-col="CPU Node 2"></td>
+                <td><input type="text" data-col="Disk Node 1"></td>
+                <td><input type="text" data-col="Disk Node 2"></td>
+                <td><button type="button" class="btn secondary remove-row">X</button></td>
+            `;
+            applianceBody.appendChild(row);
+        }
+
+        function bindRowRemoval(event) {
+            if (event.target.classList.contains('remove-row')) {
+                const row = event.target.closest('tr');
+                if (row && applianceBody.rows.length > 1) {
+                    row.remove();
+                }
+            }
+        }
+
+        function renderFileList(files) {
+            fileList.innerHTML = '';
+            Array.from(files).forEach(file => {
+                const li = document.createElement('li');
+                li.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+                fileList.appendChild(li);
+            });
+        }
+
+        function renderImagePreviews(files) {
+            imagePreview.innerHTML = '';
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    imagePreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function buildInventoryText() {
+            const rows = Array.from(applianceBody.querySelectorAll('tr'));
+            if (!rows.length) {
+                return 'None captured';
+            }
+
+            return rows.map((row, index) => {
+                const cols = Array.from(row.querySelectorAll('input[data-col]'));
+                const values = cols.map(input => `${input.dataset.col}: ${input.value.trim() || 'N/A'}`);
+                return `${index + 1}. ${values.join(' | ')}`;
+            }).join('\n');
+        }
+
+        function buildChecksText() {
+            const selectedChecks = Array.from(document.querySelectorAll('input[name="checks"]:checked')).map(c => c.value);
+            return selectedChecks.length ? selectedChecks.join(', ') : 'None selected';
+        }
+
+        function buildEmail() {
+            const getValue = id => document.getElementById(id).value.trim() || 'N/A';
+            const fileNames = Array.from(supportFiles.files).map(file => file.name);
+            const imageNames = Array.from(imageFiles.files).map(file => file.name);
+
+            return `Subject: ${getValue('customerName')} - Health Check Summary\n\nHello,\n\nPlease find the health check summary below.\n\n=== Engagement Details ===\nCustomer: ${getValue('customerName')}\nDate: ${getValue('healthCheckDate')}\nPrepared By: ${getValue('preparedBy')}\nCustomer Contact: ${getValue('customerContact')}\nEnvironment: ${getValue('environment')}\n\n=== Grid & Service Information ===\nNIOS Version: ${getValue('niosVersion')}\nGrid Name: ${getValue('gridName')}\nUpgrade Groups: ${getValue('upgradeGroup')}\nLease Time: ${getValue('leaseTime')}\nDHCP Utilization: ${getValue('dhcpUtilization')}\nTotal Leases: ${getValue('totalLeases')}\nChecks Completed: ${buildChecksText()}\n\n=== Appliance Inventory ===\n${buildInventoryText()}\n\n=== Notes ===\n${getValue('notes')}\n\n=== Recommended Next Steps ===\n${getValue('nextSteps')}\n\n=== Attachments to Include ===\nFiles: ${fileNames.length ? fileNames.join(', ') : 'None'}\nImages: ${imageNames.length ? imageNames.join(', ') : 'None'}\n\nRegards,\n${getValue('preparedBy')}`;
+        }
+
+        addRowBtn.addEventListener('click', addInventoryRow);
+        applianceBody.addEventListener('click', bindRowRemoval);
+
+        supportFiles.addEventListener('change', (event) => renderFileList(event.target.files));
+        imageFiles.addEventListener('change', (event) => renderImagePreviews(event.target.files));
+
+        generateEmailBtn.addEventListener('click', () => {
+            emailOutput.value = buildEmail();
+        });
+
+        copyEmailBtn.addEventListener('click', async () => {
+            if (!emailOutput.value.trim()) {
+                emailOutput.value = buildEmail();
+            }
+            try {
+                await navigator.clipboard.writeText(emailOutput.value);
+                alert('Email draft copied to clipboard.');
+            } catch (error) {
+                alert('Unable to copy automatically. Please select and copy manually.');
+            }
+        });
+
+        savePdfBtn.addEventListener('click', () => {
+            window.print();
+        });
+    </script>
+</body>
+</html>
