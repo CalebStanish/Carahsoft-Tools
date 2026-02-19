@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SE Health Check Builder</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>SE Health Check Builder</h1>
+            <p class="muted">Run the call in order, capture evidence, and generate a structured health check summary.</p>
+        </div>
+
+        <section class="card customer-banner">
+            <div class="field-grid">
+                <div class="field">
+                    <label for="customerName">Customer Name</label>
+                    <input id="customerName" type="text" placeholder="Example: Andover Public Schools">
+                </div>
+                <div class="field">
+                    <label for="healthCheckDate">Date</label>
+                    <input id="healthCheckDate" type="date">
+                </div>
+                <div class="field">
+                    <label for="preparedBy">Prepared By</label>
+                    <input id="preparedBy" type="text">
+                </div>
+                <div class="field">
+                    <label for="customerContact">Customer Contact</label>
+                    <input id="customerContact" type="text">
+                </div>
+            </div>
+        </section>
+
+        <div class="toolbar">
+            <button type="button" class="btn" id="generateEmailBtn">Generate Email Draft</button>
+            <button type="button" class="btn secondary" id="copyEmailBtn">Copy Email Text</button>
+            <button type="button" class="btn secondary" id="savePdfBtn">Save/Print PDF</button>
+            <button type="button" class="btn secondary" id="addRowBtn">Add Appliance Row</button>
+            <a class="btn secondary back-link" href="../../index.html">Back to Tool Directory</a>
+        </div>
+
+        <nav class="top-step-nav" aria-label="Pinned Step Navigation">
+            <a href="#step1">1. Grid Overview</a>
+            <a href="#step2">2. Backup Check</a>
+            <a href="#step3">3. Capacity</a>
+            <a href="#step4">4. License</a>
+            <a href="#step5">5. DHCP/FO</a>
+            <a href="#step6">6. Lease Time</a>
+            <a href="#step7">7. DNS</a>
+            <a href="#step8">8. Recursion</a>
+            <a href="#step9">9. BloxConnect</a>
+        </nav>
+
+        <div class="workflow-layout">
+            <aside class="card checklist-card">
+                <details class="pinned-panel" open>
+                    <summary>Checklist + Notes</summary>
+                    <h2>Health Check Steps</h2>
+                    <p class="muted">Mark each step complete as you finish it.</p>
+                    <ul class="step-list">
+                        <li><label><input type="checkbox" class="step-done" data-step="1"> <a href="#step1">1. Grid Overview</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="2"> <a href="#step2">2. Backup Check</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="3"> <a href="#step3">3. Capacity Report</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="4"> <a href="#step4">4. License Review</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="5"> <a href="#step5">5. DHCP Capacity and FO</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="6"> <a href="#step6">6. Lease Time</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="7"> <a href="#step7">7. DNS Review</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="8"> <a href="#step8">8. Recursion and Limits</a></label></li>
+                        <li><label><input type="checkbox" class="step-done" data-step="9"> <a href="#step9">9. BloxConnect</a></label></li>
+                    </ul>
+                    <p class="progress" id="stepProgress">0 / 9 complete</p>
+                    <div class="field checklist-notes">
+                        <label for="notes">General Notes</label>
+                        <div class="notes-toolbar" aria-label="General notes formatting tools">
+                            <button type="button" class="btn secondary notes-btn" id="addBulletBtn">+ Bullet</button>
+                            <button type="button" class="btn secondary notes-btn" id="addLineBtn">+ New Line</button>
+                        </div>
+                        <textarea id="notes" placeholder="Use one note per line. You can start lines with - for bullets."></textarea>
+                    </div>
+                </details>
+                <details class="guidance-panel">
+                    <summary>Health Check Questions (Reference Only)</summary>
+                    <ol class="guidance-list">
+                        <li>
+                            <strong>Grid Overview (Download 1)</strong>
+                            <ul>
+                                <li>Path: Infoblox Grid &gt; Grid Manager</li>
+                                <li>Verify member information: DB utilization, serial numbers, hardware type, hypervisor</li>
+                                <li>Fill the appliance inventory table</li>
+                                <li>Export visible data</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Backup Check</strong>
+                            <ul>
+                                <li>Use <strong>Grid Backup</strong> on the toolbar</li>
+                                <li>Confirm backups exist</li>
+                                <li>Confirm schedule is configured</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Capacity Report (Download 2)</strong>
+                            <ul>
+                                <li>Select GM</li>
+                                <li>Use capacity report on the toolbar</li>
+                                <li>Export report</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Licenses (Downloads 3 and 4)</strong>
+                            <ul>
+                                <li>Use license tab on the top gray bar and export</li>
+                                <li>Go from member to grid-wide and download anything relevant</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>DHCP Capacity and FO</strong>
+                            <ul>
+                                <li>Path: Data Management &gt; DHCP &gt; Members</li>
+                                <li>Capture total utilization and total leases</li>
+                                <li>If failover is enabled, capture FO name, role (primary/secondary), and balance status</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Lease Time</strong>
+                            <ul>
+                                <li>Review lease time settings and explain grid hierarchy as needed</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>DNS Review</strong>
+                            <ul>
+                                <li>Path: Data Management &gt; DNS &gt; Zones</li>
+                                <li>Review authoritative and forwarding zones</li>
+                                <li>Path: Grid DNS properties on toolbar</li>
+                                <li>Validate forwarders destination, query settings/recursion, and logging impact</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Recursion and Limits</strong>
+                            <ul>
+                                <li>Path: Data Management &gt; DNS &gt; Members</li>
+                                <li>Edit DNS Server &gt; Queries &gt; Advanced</li>
+                                <li>Reference default recursion limit (commonly 5000) and compare to current setting</li>
+                                <li>Path: Administration &gt; Logs &gt; Syslog</li>
+                                <li>Search <code>recursion client quota</code> and capture used/max/soft/hard values</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>BloxConnect</strong>
+                            <ul>
+                                <li>Have customer open CLI and run <code>show bloxconnect</code></li>
+                                <li>If disabled, use <code>set bloxconnect enable</code> and verify status</li>
+                                <li>Reference: <a href="https://insights.infoblox.com/resources-datasheets/infoblox-datasheet-infoblox-bloxconnect" target="_blank" rel="noopener noreferrer">BloxConnect datasheet</a></li>
+                            </ul>
+                        </li>
+                    </ol>
+                </details>
+            </aside>
+
+            <main class="workflow-main">
+                <section class="card" id="step1">
+                    <h2>1. Grid Overview (Download 1)</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="niosVersion">NIOS Version</label><input id="niosVersion" type="text"></div>
+                        <div class="field"><label for="gridName">Grid Name</label><input id="gridName" type="text"></div>
+                    </div>
+                </section>
+
+                <section class="card" style="grid-column: 1 / -1;">
+                    <h2>Step 1 Appliance Inventory (1-12 rows)</h2>
+                    <div class="table-scroll">
+                        <table id="applianceTable">
+                            <colgroup>
+                                <col class="col-name">
+                                <col class="col-type">
+                                <col class="col-bool">
+                                <col class="col-bool">
+                                <col class="col-location">
+                                <col class="col-hw">
+                                <col class="col-bool">
+                                <col class="col-pair">
+                                <col class="col-metric">
+                                <col class="col-pair">
+                                <col class="col-pair">
+                                <col class="col-small">
+                                <col class="col-small">
+                                <col class="col-psu">
+                                <col class="col-psu">
+                                <col class="col-bool">
+                                <col class="col-virtual">
+                                <col class="col-action">
+                            </colgroup>
+                            <thead>
+                                <tr class="group-header">
+                                    <th colspan="7">Identity</th>
+                                    <th colspan="6">Health Metrics</th>
+                                    <th colspan="3">Power</th>
+                                    <th colspan="1">Service</th>
+                                    <th colspan="1">Action</th>
+                                </tr>
+                                <tr>
+                                    <th>Applience Name</th>
+                                    <th>Appliance Type</th>
+                                    <th class="bool-col">DHCP</th>
+                                    <th class="bool-col">DNS</th>
+                                    <th>Location</th>
+                                    <th>HW Type</th>
+                                    <th class="bool-col">HA</th>
+                                    <th>CPU</th>
+                                    <th>DB</th>
+                                    <th>Mem</th>
+                                    <th>Disk</th>
+                                    <th>QPS</th>
+                                    <th>LPS</th>
+                                    <th>PSU Type</th>
+                                    <th>PSU Status</th>
+                                    <th class="bool-col">Redundant PSU</th>
+                                    <th>Virtual or HW</th>
+                                    <th class="action-col">Remove</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applianceBody">
+                                <tr>
+                                    <td><input type="text" data-col="Applience Name"></td>
+                                    <td>
+                                        <select data-col="Appliance Type">
+                                            <option value="GM">GM</option>
+                                            <option value="GMC">GMC</option>
+                                            <option value="Services">Services</option>
+                                            <option value="Discovery">Discovery</option>
+                                            <option value="Reporting">Reporting</option>
+                                        </select>
+                                    </td>
+                                    <td class="bool-col"><label class="inline-check compact-check"><input type="checkbox" data-col="DHCP"></label></td>
+                                    <td class="bool-col"><label class="inline-check compact-check"><input type="checkbox" data-col="DNS"></label></td>
+                                    <td><input type="text" data-col="Location"></td>
+                                    <td><input type="text" data-col="HW Type"></td>
+                                    <td class="bool-col"><label class="inline-check compact-check"><input type="checkbox" data-col="HA"></label></td>
+                                    <td>
+                                        <div class="pair-input">
+                                            <input type="text" data-col="CPU" class="percent-only" inputmode="decimal" placeholder="Node 1 %">
+                                            <span class="ha-only">,</span>
+                                            <input class="ha-only percent-only" type="text" data-col="CPU" inputmode="decimal" placeholder="Node 2 %">
+                                        </div>
+                                    </td>
+                                    <td><input type="text" data-col="DB" class="percent-only" inputmode="decimal" placeholder="%"></td>
+                                    <td>
+                                        <div class="pair-input">
+                                            <input type="text" data-col="Mem" class="percent-only" inputmode="decimal" placeholder="Node 1 %">
+                                            <span class="ha-only">,</span>
+                                            <input class="ha-only percent-only" type="text" data-col="Mem" inputmode="decimal" placeholder="Node 2 %">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="pair-input">
+                                            <input type="text" data-col="Disk" class="percent-only" inputmode="decimal" placeholder="Node 1 %">
+                                            <span class="ha-only">,</span>
+                                            <input class="ha-only percent-only" type="text" data-col="Disk" inputmode="decimal" placeholder="Node 2 %">
+                                        </div>
+                                    </td>
+                                    <td><input type="text" data-col="QPS"></td>
+                                    <td><input type="text" data-col="LPS"></td>
+                                    <td>
+                                        <select data-col="PSU Type">
+                                            <option value="Single">Single</option>
+                                            <option value="Dual">Dual</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select data-col="PSU Status">
+                                            <option value="Good">Good</option>
+                                            <option value="Warning">Warning</option>
+                                            <option value="Critical">Critical</option>
+                                            <option value="Offline">Offline</option>
+                                        </select>
+                                    </td>
+                                    <td class="bool-col"><label class="inline-check compact-check"><input type="checkbox" data-col="Redundant PSU"></label></td>
+                                    <td><input type="text" data-col="Virtual or HW"></td>
+                                    <td class="action-col"><button type="button" class="btn secondary remove-row">X</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="card" id="step2">
+                    <h2>2. Backup Check</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="backupExists">Backups Exist</label><select id="backupExists"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+                        <div class="field"><label for="backupScheduleConfigured">Schedule Configured</label><select id="backupScheduleConfigured"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+                        <div class="field full"><label for="backupNotes">Backup Notes</label><textarea id="backupNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step3">
+                    <h2>3. Capacity Report (Download 2)</h2>
+                    <div class="field-grid">
+                        <div class="field full"><label for="capacityNotes">Capacity Notes</label><textarea id="capacityNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step4">
+                    <h2>4. License Review (Downloads 3 and 4)</h2>
+                    <div class="field-grid">
+                        <div class="field full"><label for="licenseNotes">License Notes</label><textarea id="licenseNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step5">
+                    <h2>5. DHCP Capacity and FO</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="dhcpUtilization">Total Utilization</label><input id="dhcpUtilization" type="text"></div>
+                        <div class="field"><label for="totalLeases">Total Leases</label><input id="totalLeases" type="text"></div>
+                        <div class="field"><label for="foEnabled">FO Enabled</label><label class="inline-check"><input id="foEnabled" type="checkbox"> Yes</label></div>
+                        <div class="field"><label for="foName">FO Name</label><input id="foName" type="text"></div>
+                        <div class="field"><label for="foRole">Primary or Secondary</label><input id="foRole" type="text"></div>
+                        <div class="field"><label for="foBalanced">FO Balanced</label><label class="inline-check"><input id="foBalanced" type="checkbox"> Yes</label></div>
+                        <div class="field full"><label for="dhcpFoNotes">DHCP/FO Notes</label><textarea id="dhcpFoNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step6">
+                    <h2>6. Lease Time</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="leaseTime">Lease Time</label><input id="leaseTime" type="text"></div>
+                        <div class="field full"><label for="leaseNotes">Lease Notes</label><textarea id="leaseNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step7">
+                    <h2>7. DNS Review</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="authInternal">Authoritative - Internal DNS</label><input id="authInternal" type="text"></div>
+                        <div class="field"><label for="fwdInternal">Forwarding - Internal DNS</label><input id="fwdInternal" type="text"></div>
+                        <div class="field"><label for="authExternal">Authoritative - External DNS</label><input id="authExternal" type="text"></div>
+                        <div class="field"><label for="fwdExternal">Forwarding - External DNS</label><input id="fwdExternal" type="text"></div>
+                        <div class="field"><label for="authDefault">Authoritative - Default DNS</label><input id="authDefault" type="text"></div>
+                        <div class="field"><label for="fwdDefault">Forwarding - Default DNS</label><input id="fwdDefault" type="text"></div>
+                        <div class="field"><label for="dnsLoggingQr">Logging Queries and Responses</label><label class="inline-check"><input id="dnsLoggingQr" type="checkbox"> Yes</label></div>
+                        <div class="field"><label for="dnsRpzUsed">RPZ Used</label><label class="inline-check"><input id="dnsRpzUsed" type="checkbox"> Yes</label></div>
+                        <div class="field full"><label for="dnsNotes">DNS Notes</label><textarea id="dnsNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step8">
+                    <h2>8. Recursion and Limits</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="recursionLimit">Current Recursion Limit</label><input id="recursionLimit" type="text" placeholder="Example: 5000"></div>
+                        <div class="field"><label for="maxClientsAtTime">Max Clients Querying</label><input id="maxClientsAtTime" type="text"></div>
+                        <div class="field"><label for="recursionClientQuota">Recursion Client Quota</label><input id="recursionClientQuota" type="text" placeholder="used/max/soft/hard etc."></div>
+                        <div class="field"><label for="dnsServerIsMember">Member Is DNS Server</label><select id="dnsServerIsMember"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+                        <div class="field full"><label for="recursionNotes">Recursion Notes</label><textarea id="recursionNotes"></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card" id="step9">
+                    <h2>9. BloxConnect</h2>
+                    <div class="field-grid">
+                        <div class="field"><label for="bloxconnectStatus">BloxConnect Status</label><select id="bloxconnectStatus"><option value="">Select</option><option>Enabled</option><option>Disabled</option></select></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>Recommended Next Steps</h2>
+                    <div class="field-grid">
+                        <div class="field full"><label for="nextSteps">Recommended Next Steps</label><textarea id="nextSteps" placeholder="List actions for customer and internal teams."></textarea></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>Files and Images</h2>
+                    <div class="field dropzone" id="supportDropzone">
+                        <label for="supportFiles">Upload Supporting Files (multiple)</label>
+                        <input id="supportFiles" type="file" multiple>
+                        <p class="drop-hint">Drag and drop files here or click to browse.</p>
+                    </div>
+                    <ul id="fileList" class="file-list"></ul>
+
+                    <div class="field dropzone" id="imageDropzone" style="margin-top: 12px;">
+                        <label for="imageFiles">Upload Images/Screenshots</label>
+                        <input id="imageFiles" type="file" accept="image/*" multiple>
+                        <p class="drop-hint">Drag and drop images here, paste with Ctrl+V, or click to browse.</p>
+                    </div>
+                    <div id="imagePreview" class="preview-grid"></div>
+                </section>
+
+                <section class="card" id="emailCard">
+                    <h2>Email Draft Output</h2>
+                    <textarea id="emailOutput" placeholder="Click 'Generate Email Draft' to build formatted text."></textarea>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+
